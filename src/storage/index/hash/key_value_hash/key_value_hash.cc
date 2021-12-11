@@ -11,8 +11,6 @@
 
 using namespace std;
 
-template class KeyValueHash<ObjectId, ObjectId>;
-
 template <class K, class V>
 KeyValueHash<K, V>::KeyValueHash(std::size_t key_size, std::size_t value_size) :
     key_size        (key_size),
@@ -605,3 +603,5 @@ void KeyValueHash<K, V>::sort_bucket(uint_fast32_t bucket_number){
         merge_size *= 2;
     }
 }
+
+template class KeyValueHash<ObjectId, ObjectId>;

@@ -2,8 +2,8 @@
 
 using namespace std;
 
-BindingWhere::BindingWhere(const GraphModel& model, Binding& child_binding) :
-    model               (model),
+BindingWhere::BindingWhere(const GraphModel& /*model*/, Binding& child_binding) :
+    // model               (model),
     child_binding       (child_binding) { }
 
 

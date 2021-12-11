@@ -28,7 +28,7 @@ public:
     void analyze(std::ostream&, int indent = 0) const override;
 
 private:
-    const GraphModel& model;
+    // const GraphModel& model;
     std::unique_ptr<BindingIter> child_iter;
     std::unique_ptr<Condition> condition;
     uint64_t results = 0;

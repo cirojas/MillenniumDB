@@ -10,15 +10,6 @@
 
 using namespace std;
 
-template class IndexScan<1>;
-template class IndexScan<2>;
-template class IndexScan<3>;
-template class IndexScan<4>;
-template class std::unique_ptr<IndexScan<1>>;
-template class std::unique_ptr<IndexScan<2>>;
-template class std::unique_ptr<IndexScan<3>>;
-template class std::unique_ptr<IndexScan<4>>;
-
 template <std::size_t N>
 IndexScan<N>::IndexScan(BPlusTree<N>& bpt, ThreadInfo* thread_info, std::array<std::unique_ptr<ScanRange>, N> ranges) :
     bpt         (bpt),
@@ -100,3 +91,8 @@ void IndexScan<N>::analyze(std::ostream& os, int indent) const {
     os << std::string(indent, ' ');
     os << "  ↳ Real factor: " << real_factor;
 }
+
+template class IndexScan<1>;
+template class IndexScan<2>;
+template class IndexScan<3>;
+template class IndexScan<4>;

@@ -23,7 +23,7 @@ public:
     void analyze(std::ostream&, int indent = 0) const override;
 
 private:
-    const GraphModel& model;
+    // const GraphModel& model;
     std::unique_ptr<BindingIter> child_iter;
     Binding& child_binding;
     std::vector<VarId> projected_vars;

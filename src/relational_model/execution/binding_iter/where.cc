@@ -8,7 +8,7 @@ using namespace std;
 Where::Where(const GraphModel& model,
              unique_ptr<BindingIter> _child_iter,
              unique_ptr<Condition> condition) :
-    model      (model),
+    // model      (model),
     child_iter (move(_child_iter)),
     condition  (move(condition)),
     my_binding (BindingWhere(model, child_iter->get_binding())) { }

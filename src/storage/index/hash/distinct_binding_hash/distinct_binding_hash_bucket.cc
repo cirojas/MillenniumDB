@@ -8,9 +8,6 @@
 
 using namespace std;
 
-template class DistinctBindingHashBucket<GraphObject>;
-template class DistinctBindingHashBucket<ObjectId>;
-
 template <class T>
 DistinctBindingHashBucket<T>::DistinctBindingHashBucket(const TmpFileId file_id,
                                                         const uint_fast32_t bucket_number,
@@ -148,3 +145,6 @@ void DistinctBindingHashBucket<T>::redistribute(DistinctBindingHashBucket<T>& ot
     this->page.make_dirty();
     other.page.make_dirty();
 }
+
+template class DistinctBindingHashBucket<GraphObject>;
+template class DistinctBindingHashBucket<ObjectId>;

@@ -1,5 +1,5 @@
 #ifndef BASE__MANUAL_PLAN_AST_ADAPTED_H_
-#define BASE__MANUAL_PLAN_QUERY_AST_ADAPTED_H_
+#define BASE__MANUAL_PLAN_AST_ADAPTED_H_
 
 #include <boost/fusion/include/adapt_struct.hpp>
 

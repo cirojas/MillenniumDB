@@ -13,7 +13,7 @@
 void CheckWellDesigned::visit(OpOptional& op_optional) {
     auto local_vars = op_optional.op->get_vars();
 
-    for (const auto var : local_vars) {
+    for (const auto& var : local_vars) {
         if (global.find(var) != global.end() && parent.find(var) == parent.end()) {
             throw QuerySemanticException("Query is not well defined. Var " + var.name + " is breaking the rule");
         }
@@ -31,7 +31,7 @@ void CheckWellDesigned::visit(OpOptional& op_optional) {
 void CheckWellDesigned::visit(OpBasicGraphPattern& op_basic_graph_pattern) {
     auto local_vars = op_basic_graph_pattern.get_vars();
 
-    for (const auto var : local_vars) {
+    for (const auto& var : local_vars) {
         if (global.find(var) != global.end() && parent.find(var) == parent.end()) {
             throw QuerySemanticException("Query is not well defined. Var " + var.name + " is breaking the rule");
         }

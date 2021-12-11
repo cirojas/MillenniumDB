@@ -6,11 +6,6 @@
 #include "storage/buffer_manager.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 
-template class BPlusTreeLeaf<1>;
-template class BPlusTreeLeaf<2>;
-template class BPlusTreeLeaf<3>;
-template class BPlusTreeLeaf<4>;
-
 using namespace std;
 
 template <std::size_t N>
@@ -284,3 +279,8 @@ bool BPlusTreeLeaf<N>::check() const {
     }
     return true;
 }
+
+template class BPlusTreeLeaf<1>;
+template class BPlusTreeLeaf<2>;
+template class BPlusTreeLeaf<3>;
+template class BPlusTreeLeaf<4>;

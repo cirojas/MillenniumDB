@@ -16,7 +16,7 @@ public:
     GraphObject operator[](const VarId var_id) override;
 
 private:
-    GraphModel& model;
+    // GraphModel& model;
     Binding& child_binding;
 };
 

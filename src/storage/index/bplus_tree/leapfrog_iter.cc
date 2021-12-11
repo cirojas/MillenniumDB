@@ -6,10 +6,6 @@
 #include "base/exceptions.h"
 #include "storage/buffer_manager.h"
 
-template class LeapfrogBptIter<2>;
-template class LeapfrogBptIter<3>;
-template class LeapfrogBptIter<4>;
-
 using namespace std;
 
 template <size_t N>
@@ -238,3 +234,7 @@ bool LeapfrogBptIter<N>::open_terms(BindingId& input_binding) {
     level = initial_ranges.size() - 1;
     return internal_search(Record<N>(min), Record<N>(max));
 }
+
+template class LeapfrogBptIter<2>;
+template class LeapfrogBptIter<3>;
+template class LeapfrogBptIter<4>;

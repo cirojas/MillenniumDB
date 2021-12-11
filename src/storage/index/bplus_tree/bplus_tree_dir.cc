@@ -10,11 +10,6 @@
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/record.h"
 
-template class BPlusTreeDir<1>;
-template class BPlusTreeDir<2>;
-template class BPlusTreeDir<3>;
-template class BPlusTreeDir<4>;
-
 using namespace std;
 
 template <std::size_t N>
@@ -539,3 +534,8 @@ bool BPlusTreeDir<N>::check() const {
     }
     return true;
 }
+
+template class BPlusTreeDir<1>;
+template class BPlusTreeDir<2>;
+template class BPlusTreeDir<3>;
+template class BPlusTreeDir<4>;

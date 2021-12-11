@@ -20,10 +20,9 @@ public:
     void analyze(std::ostream&, int indent = 0) const override;
 
 private:
-    const GraphModel& model;
+    // const GraphModel& model;
     std::unique_ptr<BindingIdIter> root;
     BindingId input;
-    BindingId* binding_id_root;
 
     BindingMaterializeId my_binding;
 };

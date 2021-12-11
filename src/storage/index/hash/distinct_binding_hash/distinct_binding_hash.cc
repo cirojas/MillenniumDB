@@ -12,9 +12,6 @@
 #include "storage/index/hash/distinct_binding_hash/distinct_binding_hash_bucket.h"
 #include "storage/index/hash/hash_functions/hash_function_wrapper.h"
 
-template class DistinctBindingHash<GraphObject>;
-template class DistinctBindingHash<ObjectId>;
-
 template <class T>
 DistinctBindingHash<T>::DistinctBindingHash(std::size_t tuple_size) :
     tuple_size      (tuple_size),
@@ -142,3 +139,6 @@ void DistinctBindingHash<T>::duplicate_dirs() {
     delete[](dir);
     dir = new_dir;
 }
+
+template class DistinctBindingHash<GraphObject>;
+template class DistinctBindingHash<ObjectId>;
