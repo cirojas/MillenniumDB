@@ -1,7 +1,8 @@
 #include <climits>
-#include <experimental/filesystem>
 #include <iostream>
 #include <memory>
+
+#include <boost/filesystem.hpp>
 
 #include "storage/file_manager.h"
 #include "storage/buffer_manager.h"
@@ -92,7 +93,7 @@ int main(int argc, char** argv) {
 
     string db_folder = "tests/dbs/test_bpt";
     { // check db_folder is empty or does not exists
-        namespace fs = std::experimental::filesystem;
+        namespace fs = boost::filesystem;
         if (fs::exists(db_folder) && !fs::is_empty(db_folder)) {
             cerr << "Database folder is not empty.\n";
             return 1;

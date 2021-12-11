@@ -1,7 +1,7 @@
-#include <experimental/filesystem>
 #include <fstream>
 #include <iostream>
 
+#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 
 #include "relational_model/models/quad_model/quad_model.h"
@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     po::notify(vm);
 
     { // check if db_folder is empty or does not exists
-        namespace fs = std::experimental::filesystem;
+        namespace fs = boost::filesystem;
         if (!fs::exists(db_folder) ) {
             cerr << "Database folder doesn't exists.\n";
             return 1;

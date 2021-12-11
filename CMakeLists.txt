@@ -45,11 +45,11 @@ set(TEST_TARGETS
 
 foreach(target ${BUILD_TARGETS})
     add_executable(${target} ${CMAKE_SOURCE_DIR}/src/main/${target}.cc)
-    target_link_libraries(${target} millenniumdb stdc++fs boost_program_options boost_system)
+    target_link_libraries(${target} millenniumdb stdc++fs boost_program_options boost_system boost_filesystem)
 endforeach(target)
 
 foreach(target ${TEST_TARGETS})
     add_executable(${target} ${CMAKE_SOURCE_DIR}/src/tests/${target}.cc)
-    target_link_libraries(${target} millenniumdb stdc++fs boost_program_options boost_system)
+    target_link_libraries(${target} millenniumdb stdc++fs boost_program_options boost_system boost_filesystem)
     # add_test(NAME ${target} COMMAND ${target})
 endforeach(target)

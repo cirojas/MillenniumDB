@@ -1,8 +1,8 @@
 ﻿#include <chrono>
 #include <climits>
-#include <experimental/filesystem>
 #include <iostream>
 
+#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 
 #include "base/binding/binding_id.h"
@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
         }
 
         { // check db_folder is empty or does not exists
-            namespace fs = std::experimental::filesystem;
+            namespace fs = boost::filesystem;
             if (fs::exists(db_folder) && !fs::is_empty(db_folder)) {
                 cout << "Database folder already exists and it's not empty\n";
                 return EXIT_FAILURE;
