@@ -55,8 +55,7 @@ struct CombinationEnumerator {
 
 SelingerOptimizer::SelingerOptimizer(vector<unique_ptr<Plan>> base_plans,
                                      const std::vector<std::string>& var_names) :
-    plans_size (base_plans.size()),
-    var_names  (var_names)
+    plans_size (base_plans.size())
 {
     assert(plans_size > 0);
     optimal_plans = new unique_ptr<Plan>*[plans_size];

@@ -17,7 +17,6 @@ public:
 
 private:
     const std::size_t plans_size;
-    const std::vector<std::string>& var_names;
 
     std::unique_ptr<Plan>** optimal_plans;
 

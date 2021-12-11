@@ -1,6 +1,8 @@
 #ifndef STORAGE__PAGE_ID_H_
 #define STORAGE__PAGE_ID_H_
 
+#include <cstring>
+
 #include "storage/file_id.h"
 
 struct PageId {
