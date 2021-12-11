@@ -33,7 +33,7 @@ public:
         return os;
     };
 
-    bool nullable() const {
+    bool nullable() const override {
         return true;
     }
 
@@ -41,7 +41,7 @@ public:
         return std::make_unique<OpPathOptional>(path->duplicate());
     }
 
-    OpPathType type() const { return OpPathType::OP_PATH_OPTIONAL; }
+    OpPathType type() const override { return OpPathType::OP_PATH_OPTIONAL; }
 
     PathAutomaton get_automaton() const override {
         auto automaton = path->get_automaton();

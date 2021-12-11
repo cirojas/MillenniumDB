@@ -1,5 +1,5 @@
 #ifndef BASE__QUERY_AST_PRINTER_H_
-#define BASE__QUERY_AST_PRINTER_H__
+#define BASE__QUERY_AST_PRINTER_H_
 
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>

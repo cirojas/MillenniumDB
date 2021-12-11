@@ -38,7 +38,7 @@ public:
         return os;
     };
 
-    bool nullable() const {
+    bool nullable() const override {
         return true;
     }
 
@@ -46,7 +46,7 @@ public:
         return std::make_unique<OpPathKleeneStar>(*this);
     }
 
-    OpPathType type() const { return OpPathType::OP_PATH_KLEENE_STAR; }
+    OpPathType type() const override { return OpPathType::OP_PATH_KLEENE_STAR; }
 
     PathAutomaton get_automaton() const override {
         auto path_automaton = path->get_automaton();
@@ -70,7 +70,7 @@ public:
         }
     }
 
-    std::unique_ptr<OpPath> invert() const {
+    std::unique_ptr<OpPath> invert() const override {
         return std::make_unique<OpPathKleeneStar>(path->invert());
     }
 };

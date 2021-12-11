@@ -60,7 +60,7 @@ public:
         return os;
     };
 
-    bool nullable() const {
+    bool nullable() const override {
         return is_nullable;
     }
 
@@ -68,7 +68,7 @@ public:
         return std::make_unique<OpPathSequence>(*this);
     }
 
-    OpPathType type() const { return OpPathType::OP_PATH_SEQUENCE; }
+    OpPathType type() const override { return OpPathType::OP_PATH_SEQUENCE; }
 
     PathAutomaton get_automaton() const override {
         auto sequence_automaton = sequence[0]->get_automaton();

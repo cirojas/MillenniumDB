@@ -61,7 +61,7 @@ public:
         return os;
     };
 
-    bool nullable() const {
+    bool nullable() const override {
         return is_nullable;
     }
 
@@ -69,7 +69,7 @@ public:
         return std::make_unique<OpPathAlternatives>(*this);
     }
 
-    OpPathType type() const { return OpPathType::OP_PATH_ALTERNATIVES; }
+    OpPathType type() const override { return OpPathType::OP_PATH_ALTERNATIVES; }
 
     PathAutomaton get_automaton() const override {
         auto alternative_automaton = PathAutomaton();

@@ -38,7 +38,7 @@ public:
         return os;
     };
 
-    bool nullable() const {
+    bool nullable() const override {
         return false;
     }
 
@@ -46,7 +46,7 @@ public:
         return std::make_unique<OpPathAtom>(*this);
     }
 
-    OpPathType type() const { return OpPathType::OP_PATH_ATOM; }
+    OpPathType type() const override { return OpPathType::OP_PATH_ATOM; }
 
     PathAutomaton get_automaton() const override {
         // Create a simple automaton
