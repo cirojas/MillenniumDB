@@ -33,15 +33,15 @@ struct NodeIdToStringVisitor {
         return s;
     }
 
-    std::string operator()(const int64_t i) {
+    std::string operator()(const int64_t& i) {
         return std::to_string(i);
     }
 
-    std::string operator()(const bool b) {
+    std::string operator()(const bool& b) {
         return b ? "true" : "false";
     }
 
-    std::string operator()(const float f) {
+    std::string operator()(const float& f) {
         return std::to_string(f);
     }
 };

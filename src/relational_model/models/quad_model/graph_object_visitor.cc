@@ -90,7 +90,7 @@ ObjectId GraphObjectVisitor::operator()(const NotFoundObject&) const {
 }
 
 
-ObjectId GraphObjectVisitor::operator()(const int64_t n) const {
+ObjectId GraphObjectVisitor::operator()(const int64_t& n) const {
     int64_t int_value = n;
 
     if (int_value < 0) {
@@ -117,7 +117,7 @@ ObjectId GraphObjectVisitor::operator()(const int64_t n) const {
 }
 
 
-ObjectId GraphObjectVisitor::operator()(const bool value_bool) const {
+ObjectId GraphObjectVisitor::operator()(const bool& value_bool) const {
     if (value_bool) {
         return ObjectId(GraphModel::VALUE_BOOL_MASK | 0x01);
     } else {
@@ -126,7 +126,7 @@ ObjectId GraphObjectVisitor::operator()(const bool value_bool) const {
 }
 
 
-ObjectId GraphObjectVisitor::operator()(const float value_float) const {
+ObjectId GraphObjectVisitor::operator()(const float& value_float) const {
     static_assert(sizeof(value_float) == 4);
     unsigned char bytes[sizeof(value_float)];
     memcpy(bytes, &value_float, sizeof(value_float));

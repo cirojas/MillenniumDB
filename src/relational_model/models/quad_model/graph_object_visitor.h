@@ -21,9 +21,9 @@ struct GraphObjectVisitor {
     ObjectId operator()(const NullGraphObject&)         const;
     ObjectId operator()(const NotFoundObject&)          const;
     ObjectId operator()(const Path&)                    const;
-    ObjectId operator()(const int64_t n)                const;
-    ObjectId operator()(const bool b)                   const;
-    ObjectId operator()(const float f)                  const;
+    ObjectId operator()(const int64_t& n)               const;
+    ObjectId operator()(const bool& b)                  const;
+    ObjectId operator()(const float& f)                 const;
 };
 
 #endif // RELATIONAL_MODEL__GRAPH_OBJECT_VISITOR_H_

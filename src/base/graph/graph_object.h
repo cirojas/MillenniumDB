@@ -99,10 +99,10 @@ struct GraphObjectOstreamVisitor {
     void operator()(const StringExternal& s)        const { os << '"' << s.id << '"'; }
     void operator()(const NullGraphObject&)         const { os << "null"; }
     void operator()(const NotFoundObject&)          const { os << "NotFoundObj"; }
-    void operator()(const int64_t n)                const { os << n; }
-    void operator()(const float f)                  const { os << f; }
+    void operator()(const int64_t& n)               const { os << n; }
+    void operator()(const float& f)                 const { os << f; }
 
-    void operator()(const bool b) const {
+    void operator()(const bool& b) const {
         if (b) os << "true";
         else os << "false";
     }
