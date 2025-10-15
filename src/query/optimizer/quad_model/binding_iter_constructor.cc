@@ -16,6 +16,7 @@
 #include "query/optimizer/plan/join_order/selinger_optimizer.h"
 #include "query/optimizer/quad_model/expr_property_types_visitor.h"
 #include "query/optimizer/quad_model/expr_to_binding_expr.h"
+#include "query/optimizer/quad_model/plan/c2rpq_plan.h"
 #include "query/optimizer/quad_model/plan/disjoint_object_plan.h"
 #include "query/optimizer/quad_model/plan/edge_plan.h"
 #include "query/optimizer/quad_model/plan/label_plan.h"
@@ -92,18 +93,18 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
     }
 
     // Process property paths
-    for (auto& path : op_basic_graph_pattern.paths) {
-        base_plans.push_back(std::make_unique<PathPlan>(
-            begin_at_left,
-            path.direction,
-            path.var,
-            path.from,
-            path.to,
-            *path.path,
-            path.semantic,
-            path.K
-        ));
-    }
+    // for (auto& path : op_basic_graph_pattern.paths) {
+    //     base_plans.push_back(std::make_unique<PathPlan>(
+    //         begin_at_left,
+    //         path.direction,
+    //         path.var,
+    //         path.from,
+    //         path.to,
+    //         *path.path,
+    //         path.semantic,
+    //         path.K
+    //     ));
+    // }
 
     std::set<VarId> join_vars;
 
@@ -167,6 +168,27 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
         for (auto var : plan->get_vars()) {
             safe_assigned_vars.insert(var);
         }
+    }
+
+    if (!op_basic_graph_pattern.paths.empty()) {
+        // TODO: this implementation only works for a limited form of C2RPQs
+        // Something like this should work fine:
+        // MATCH (?x :label)=[RPQ_PATH]=>(?y)
+        assert(op_basic_graph_pattern.paths.size() == 1);
+        auto path = op_basic_graph_pattern.paths.begin();
+        C2RPQ_Plan plan(
+            join_vars,
+            std::move(tmp),
+            begin_at_left,
+            path->direction,
+            path->var,
+            path->from,
+            path->to,
+            *path->path,
+            path->semantic,
+            path->K
+        );
+        tmp = plan.get_binding_iter();
     }
 }
 
@@ -432,9 +454,7 @@ void BindingIterConstructor::make_solution_modifiers()
 
     if (op_having) {
         std::vector<std::unique_ptr<BindingExpr>> exprs;
-        exprs.push_back(
-            std::make_unique<BindingExprVar>(having_var)
-        );
+        exprs.push_back(std::make_unique<BindingExprVar>(having_var));
         tmp = std::make_unique<Filter>(&Conversions::to_boolean, std::move(tmp), std::move(exprs));
     }
 
@@ -488,7 +508,10 @@ void BindingIterConstructor::visit(OpReturn& op_return)
                 false
             );
             if (casted->var_with_property != var) {
-                projection_order_exprs.emplace_back(var, std::make_unique<BindingExprVar>(casted->var_with_property));
+                projection_order_exprs.emplace_back(
+                    var,
+                    std::make_unique<BindingExprVar>(casted->var_with_property)
+                );
             }
         } else {
             ExprToBindingExpr expr_to_binding_expr(this, var, true);
