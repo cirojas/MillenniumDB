@@ -21,78 +21,76 @@ void BFSMultipleStartsOnlyEndpoint<MULTIPLE_FINAL>::_reset()
     open.swap(empty);
 
     visited.clear();
-    if (MULTIPLE_FINAL) {
-        reached_final.clear();
-    }
 
     lhs->reset();
     lhs_at_end = false;
+    ready_solutions.clear();
 
-    // TODO: make ready_solutions empty?
     fill_next_lhs_batch();
 }
 
 template<bool MULTIPLE_FINAL>
-bool BFSMultipleStartsOnlyEndpoint<MULTIPLE_FINAL>::fill_next_lhs_batch()
+void BFSMultipleStartsOnlyEndpoint<MULTIPLE_FINAL>::fill_next_lhs_batch()
 {
+    start_batch.clear();
+    reached_final.clear();
     if (lhs_at_end) {
-        return false;
+        return;
     }
 
-    start_batch.clear();
-    // TODO: take at max 64 items
     uint64_t i = 0;
-    while (i < 64 && lhs->next()) {
+    while (i < 64 && lhs->next()) { // TODO:
         ObjectId start_node = (*parent_binding)[start];
         assert(i < 64);
         if (!start_node.is_null()) {
-            auto state_inserted = visited.emplace(automaton.start_state, start_node, 1ULL >> i);
+            auto state_inserted = visited.emplace(automaton.start_state, start_node, 1ULL << i);
             start_batch.push_back(start_node);
             open.push(state_inserted.first.operator->());
             i++;
         }
     }
-    // TODO: remember if lhs is at end?
+    lhs_at_end = i == 0;
 
     // Starting state is solution
     if (automaton.is_final_state[automaton.start_state]) {
         for (auto ii = i; ii < i; ii++) {
-            ready_solutions.emplace();
+            ready_solutions.emplace_back(ii, start_batch[ii]);
         }
     }
     iter = std::make_unique<NullIndexIterator>();
-    return i > 0;
 }
 
 template<bool MULTIPLE_FINAL>
 bool BFSMultipleStartsOnlyEndpoint<MULTIPLE_FINAL>::_next()
 {
 next_begin:
-    if (!ready_solutions.size() > 0) {
-        ready_solutions.pop();
+    while (ready_solutions.size() > 0) {
+        auto solution = ready_solutions.back();
+        ready_solutions.pop_back();
         if constexpr (MULTIPLE_FINAL) {
-            reached_final.insert(...);
+            if (!reached_final.insert(solution).second) {
+                continue;
+            }
         }
-        parent_binding->add(start, ...);
-        parent_binding->add(end, ...);
+        parent_binding->add(start, start_batch[solution.start_index]);
+        parent_binding->add(end, solution.end);
         return true;
     }
 
     while (open.size() > 0) {
         auto current_state = open.front();
 
-        // TODO: maybe return true false only
-        auto reached_final_state = expand_neighbors(*current_state);
-
-        // Enumerate reached solutions
-        if (reached_final_state != nullptr) {
+        if (expand_neighbors(*current_state)) {
+            // Enumerate reached solutions
             goto next_begin;
         } else {
             // Pop and visit next state
+            current_state->in_queue = false;
             open.pop();
         }
     }
-    if (fill_next_lhs_batch()) {
+    fill_next_lhs_batch();
+    if (!start_batch.empty()) {
         goto next_begin;
     }
 
@@ -100,15 +98,14 @@ next_begin:
 }
 
 template<bool MULTIPLE_FINAL>
-const EndpointSearchState*
-    BFSMultipleStartsOnlyEndpoint<MULTIPLE_FINAL>::expand_neighbors(const EndpointSearchState& current_state)
+bool BFSMultipleStartsOnlyEndpoint<MULTIPLE_FINAL>::expand_neighbors(const EndpointSearchState& current_state)
 {
     // Check if this is the first time that current_state is explored
     if (iter->at_end()) {
         current_transition = 0;
         // Check if automaton state has transitions
         if (automaton.from_to_connections[current_state.automaton_state].size() == 0) {
-            return nullptr;
+            return false;
         }
         set_iter(current_state);
     }
@@ -120,24 +117,45 @@ const EndpointSearchState*
 
         // Iterate over records until a final state is reached
         while (iter->next()) {
-            EndpointSearchState next_state(transition.to, ObjectId(iter->get_reached_node()));
+            EndpointSearchState next_state(
+                transition.to,
+                ObjectId(iter->get_reached_node()),
+                current_state.bitmap
+            );
             auto visited_state = visited.insert(next_state);
 
             // If next state was visited for the first time
+            auto reached_state = visited_state.first;
             if (visited_state.second) {
-                auto reached_state = visited_state.first;
                 open.push(reached_state.operator->());
 
                 // Check if new path is solution
                 if (automaton.is_final_state[reached_state->automaton_state]) {
-                    if (MULTIPLE_FINAL) {
-                        auto node_reached_final = reached_final.find(reached_state->node_id.id);
-                        if (node_reached_final == reached_final.end()) {
-                            reached_final.insert(reached_state->node_id.id);
-                            return reached_state.operator->();
+                    for (uint64_t i = 0; i < start_batch.size(); i++) {
+                        if ((1ULL << i & reached_state->bitmap) != 0) {
+                            ready_solutions.emplace_back(i, reached_state->node_id);
                         }
-                    } else {
-                        return reached_state.operator->();
+                    }
+                    return true;
+                }
+            } else {
+                auto old_bitmap = reached_state->bitmap;
+                auto new_bitmap = current_state.bitmap | reached_state->bitmap;
+                if (reached_state->bitmap != new_bitmap) {
+                    reached_state->bitmap = new_bitmap;
+                    if (!reached_state->in_queue) {
+                        reached_state->in_queue = true;
+                        open.push(reached_state.operator->());
+                    }
+                    // Check if new path is solution
+                    if (automaton.is_final_state[reached_state->automaton_state]) {
+                        for (uint64_t i = 0; i < start_batch.size(); i++) {
+                            auto bit_shifted = 1ULL << i;
+                            if ((bit_shifted & new_bitmap) != 0 && (bit_shifted & old_bitmap) == 0) {
+                                ready_solutions.emplace_back(i, reached_state->node_id);
+                            }
+                        }
+                        return true;
                     }
                 }
             }
@@ -149,7 +167,7 @@ const EndpointSearchState*
             set_iter(current_state);
         }
     }
-    return nullptr;
+    return false;
 }
 
 template<bool MULTIPLE_FINAL>

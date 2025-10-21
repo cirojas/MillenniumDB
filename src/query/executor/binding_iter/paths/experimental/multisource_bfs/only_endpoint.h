@@ -3,8 +3,8 @@
 #include <memory>
 #include <queue>
 
-#include <boost/unordered/unordered_node_set.hpp>
 #include <boost/unordered/unordered_flat_set.hpp>
+#include <boost/unordered/unordered_node_set.hpp>
 
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
@@ -13,6 +13,39 @@
 #include "endpoint_search_state.h"
 
 namespace Paths { namespace Any {
+
+struct EndpointSolution {
+    int start_index;
+    ObjectId end;
+
+    EndpointSolution(int start_index, ObjectId end) :
+        start_index(start_index),
+        end(end)
+    { }
+
+    bool operator==(const EndpointSolution& other) const
+    {
+        return int(this->start_index == other.start_index) & int(this->end == other.end);
+    }
+
+    struct Hasher {
+        std::size_t operator()(const EndpointSolution& s) const
+        {
+            return s.end.id;
+        }
+    };
+};
+
+// Dummy structure for template usage
+class DummyEndpointSet {
+public:
+    static inline void clear() { }
+
+    static inline std::pair<bool, bool> insert(const EndpointSolution&)
+    {
+        return { true, true };
+    }
+};
 
 template<bool MULTIPLE_FINAL>
 class BFSMultipleStartsOnlyEndpoint : public BindingIter {
@@ -27,7 +60,7 @@ private:
     // where the results will be written, determined in begin()
     Binding* parent_binding;
 
-     // Set of visited SearchStates
+    // Set of visited SearchStates
     boost::unordered_node_set<EndpointSearchState, std::hash<EndpointSearchState>> visited;
 
     // Queue for BFS. Pointers point to the states in visited
@@ -41,14 +74,16 @@ private:
 
     typename std::conditional<
         MULTIPLE_FINAL,
-        boost::unordered_flat_set<uint64_t>,
-        DummySet>::type reached_final;
+        boost::unordered_flat_set<EndpointSolution, EndpointSolution::Hasher>,
+        DummyEndpointSet>::type reached_final;
 
     bool lhs_at_end;
 
     std::vector<ObjectId> start_batch;
 
-    bool fill_next_lhs_batch();
+    std::vector<EndpointSolution> ready_solutions;
+
+    void fill_next_lhs_batch();
 
 public:
     // Statistics
@@ -75,7 +110,7 @@ public:
     void print(std::ostream& os, int indent, bool stats) const override;
 
     // Expand neighbors from current state
-    const EndpointSearchState* expand_neighbors(const EndpointSearchState& current_state);
+    bool expand_neighbors(const EndpointSearchState& current_state);
 
     void assign_nulls() override
     {

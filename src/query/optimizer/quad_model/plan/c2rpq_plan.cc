@@ -5,6 +5,7 @@
 #include "query/exceptions.h"
 #include "query/executor/binding_iter/paths/experimental/multisource_bfs/multiple.h"
 #include "query/executor/binding_iter/paths/experimental/multisource_bfs/naive.h"
+#include "query/executor/binding_iter/paths/experimental/multisource_bfs/only_endpoint.h"
 #include "query/executor/binding_iter/paths/experimental/multisource_bfs/optimized_bitset.h"
 #include "query/executor/binding_iter/paths/index_provider/quad_model_index_provider.h"
 #include "query/query_context.h"
