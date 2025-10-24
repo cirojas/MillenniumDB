@@ -20,8 +20,6 @@ void BFSMultipleStartsOnlyEndpoint<MULTIPLE_FINAL>::_reset()
     std::queue<const EndpointSearchState*> empty;
     open.swap(empty);
 
-    visited.clear();
-
     lhs->reset();
     lhs_at_end = false;
     ready_solutions.clear();
@@ -34,12 +32,13 @@ void BFSMultipleStartsOnlyEndpoint<MULTIPLE_FINAL>::fill_next_lhs_batch()
 {
     start_batch.clear();
     reached_final.clear();
+    visited.clear();
     if (lhs_at_end) {
         return;
     }
 
     uint64_t i = 0;
-    while (i < 64 && lhs->next()) { // TODO:
+    while (i < 64 && lhs->next()) {
         ObjectId start_node = (*parent_binding)[start];
         assert(i < 64);
         if (!start_node.is_null()) {
@@ -53,7 +52,7 @@ void BFSMultipleStartsOnlyEndpoint<MULTIPLE_FINAL>::fill_next_lhs_batch()
 
     // Starting state is solution
     if (automaton.is_final_state[automaton.start_state]) {
-        for (auto ii = i; ii < i; ii++) {
+        for (uint64_t ii = 0; ii < i; ii++) {
             ready_solutions.emplace_back(ii, start_batch[ii]);
         }
     }
