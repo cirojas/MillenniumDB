@@ -85,7 +85,7 @@ std::unique_ptr<BindingIter> C2RPQ_Plan::get_enum(const RPQ_DFA& automaton, VarI
     case PathSemantic::DEFAULT:
     case PathSemantic::ANY_WALKS: {
         if (automaton.total_final_states > 1) {
-            return std::make_unique<Any::BFSMultipleStartsOptimizedBitset<true>>(
+            return std::make_unique<Any::BFSMultipleStartsOnlyEndpoint<true>>(
                 std::move(lhs),
                 path_var,
                 start,
@@ -94,7 +94,7 @@ std::unique_ptr<BindingIter> C2RPQ_Plan::get_enum(const RPQ_DFA& automaton, VarI
                 std::move(provider)
             );
         } else {
-            return std::make_unique<Any::BFSMultipleStartsOptimizedBitset<false>>(
+            return std::make_unique<Any::BFSMultipleStartsOnlyEndpoint<false>>(
                 std::move(lhs),
                 path_var,
                 start,

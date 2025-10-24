@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include "graph_models/object_id.h"
 
 namespace Paths { namespace Any {
