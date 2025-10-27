@@ -122,9 +122,9 @@ bool BFSMultipleStartsOnlyEndpoint<MULTIPLE_FINAL>::expand_neighbors(const Endpo
                 current_state.bitmap
             );
             auto visited_state = visited.insert(next_state);
+            auto reached_state = visited_state.first;
 
             // If next state was visited for the first time
-            auto reached_state = visited_state.first;
             if (visited_state.second) {
                 open.push(reached_state.operator->());
 

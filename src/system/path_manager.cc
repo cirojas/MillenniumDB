@@ -189,6 +189,12 @@ ObjectId PathManager::set_path(const Paths::Any::MultiSourceSearchState* visited
     return ObjectId(ObjectId::MASK_PATH | BFS_MULTIPLE_STARTS_MASK | path_var.id);
 }
 
+ObjectId PathManager::set_path(const Paths::Any::MSSearchState* visited_pointer, VarId path_var)
+{
+    auto index = get_thread_index();
+    paths[index][path_var.id] = visited_pointer;
+    return ObjectId(ObjectId::MASK_PATH | ANY_SHORTEST_MS_MASK | path_var.id);
+}
 
 void PathManager::for_each(
     uint64_t path_id,
@@ -322,6 +328,13 @@ void PathManager::for_each(
             paths[index][decoded_id]
         );
         state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
+        break;
+    }
+    case ANY_SHORTEST_MS_MASK: {
+        auto state = reinterpret_cast<const Paths::Any::MSSearchState*>(
+            paths[index][decoded_id]
+        );
+        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
         break;
     }
     default:

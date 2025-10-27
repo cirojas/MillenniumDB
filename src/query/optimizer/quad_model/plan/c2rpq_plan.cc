@@ -3,10 +3,11 @@
 // #include "graph_models/quad_model/quad_model.h"
 #include "graph_models/quad_model/quad_object_id.h"
 #include "query/exceptions.h"
-#include "query/executor/binding_iter/paths/experimental/multisource_bfs/multiple.h"
-#include "query/executor/binding_iter/paths/experimental/multisource_bfs/naive.h"
+// #include "query/executor/binding_iter/paths/experimental/multisource_bfs/polaco/multiple.h"
+// #include "query/executor/binding_iter/paths/experimental/multisource_bfs/polaco/naive.h"
+// #include "query/executor/binding_iter/paths/experimental/multisource_bfs/polaco/optimized_bitset.h"
 #include "query/executor/binding_iter/paths/experimental/multisource_bfs/only_endpoint.h"
-#include "query/executor/binding_iter/paths/experimental/multisource_bfs/optimized_bitset.h"
+#include "query/executor/binding_iter/paths/experimental/multisource_bfs/ms_bfs_enum.h"
 #include "query/executor/binding_iter/paths/index_provider/quad_model_index_provider.h"
 #include "query/query_context.h"
 
@@ -85,7 +86,7 @@ std::unique_ptr<BindingIter> C2RPQ_Plan::get_enum(const RPQ_DFA& automaton, VarI
     case PathSemantic::DEFAULT:
     case PathSemantic::ANY_WALKS: {
         if (automaton.total_final_states > 1) {
-            return std::make_unique<Any::BFSMultipleStartsOnlyEndpoint<true>>(
+            return std::make_unique<Any::BFSMultiSource<true>>(
                 std::move(lhs),
                 path_var,
                 start,
@@ -94,7 +95,7 @@ std::unique_ptr<BindingIter> C2RPQ_Plan::get_enum(const RPQ_DFA& automaton, VarI
                 std::move(provider)
             );
         } else {
-            return std::make_unique<Any::BFSMultipleStartsOnlyEndpoint<false>>(
+            return std::make_unique<Any::BFSMultiSource<false>>(
                 std::move(lhs),
                 path_var,
                 start,
