@@ -2,18 +2,18 @@
 
 using namespace Paths::Any;
 
-void MSSearchState::print(
+void MSSearchStateSolution::print(
     std::ostream& os,
     std::function<void(std::ostream& os, ObjectId)> print_node,
     std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
     bool begin_at_left
 ) const
 {
-    uint32_t start_idx = this->start_node_idx;
+    uint32_t start_idx = this->start_index;
     auto start = this->start_node;
 
     if (begin_at_left) {
-        auto cur_state = this;
+        auto cur_state = this->state;
 
         std::vector<ObjectId> nodes;
         std::vector<ObjectId> edges;
@@ -39,7 +39,7 @@ void MSSearchState::print(
             print_node(os, nodes[i]);
         }
     } else {
-        auto cur_state = this;
+        auto cur_state = this->state;
 
         auto it = cur_state->previous.find(start_idx);
         while (it != cur_state->previous.end()) {

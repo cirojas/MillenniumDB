@@ -22,10 +22,6 @@ struct MSSearchState {
     // State of the automaton defining the path query
     const uint32_t automaton_state;
 
-    // The start node of the reconstructed path
-    mutable ObjectId start_node;
-    mutable uint32_t start_node_idx;
-
     //  start_index -> Transition
     mutable std::map<uint32_t, Transition> previous;
 
@@ -36,7 +32,7 @@ struct MSSearchState {
         automaton_state(automaton_state)
     { }
 
-    // MSSearchState(const MSSearchState& other) = delete;
+    MSSearchState(const MSSearchState& other) = delete;
 
     void set_previous(
         uint32_t start_idx,
@@ -48,13 +44,6 @@ struct MSSearchState {
         Transition transition { previous_state, type_id, inverse_direction };
         previous.emplace(start_idx, transition);
     }
-
-    void print(
-        std::ostream& os,
-        std::function<void(std::ostream& os, ObjectId)> print_node,
-        std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
-        bool begin_at_left
-    ) const;
 
     // For ordered set
     bool operator<(const MSSearchState& other) const
@@ -73,6 +62,29 @@ struct MSSearchState {
     {
         return (automaton_state == other.automaton_state) & (node_id == other.node_id);
     }
+};
+
+struct MSSearchStateSolution {
+    // The start node of the reconstructed path
+    ObjectId start_node;
+    uint32_t start_index;
+
+    const MSSearchState* state;
+
+    MSSearchStateSolution() = default;
+
+    MSSearchStateSolution(ObjectId start_node, uint32_t start_index, const MSSearchState* state) :
+        start_node(start_node),
+        start_index(start_index),
+        state(state)
+    { }
+
+    void print(
+        std::ostream& os,
+        std::function<void(std::ostream& os, ObjectId)> print_node,
+        std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
+        bool begin_at_left
+    ) const;
 };
 
 }} // namespace Paths::Any

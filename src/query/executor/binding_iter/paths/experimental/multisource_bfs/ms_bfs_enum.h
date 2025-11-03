@@ -28,17 +28,6 @@ public:
 
 template<bool MULTIPLE_FINAL>
 class BFSMultiSource : public BindingIter {
-    struct Solution {
-        int start_index;
-        const MSSearchState* state;
-
-        Solution(int start_index, const MSSearchState* state) :
-            start_index(start_index),
-            state(state)
-        { }
-
-    };
-
 private:
     // Attributes determined in the constructor
     std::unique_ptr<BindingIter> lhs;
@@ -72,9 +61,12 @@ private:
 
     std::vector<ObjectId> start_batch;
 
-    std::vector<Solution> ready_solutions;
+    std::vector<MSSearchStateSolution> ready_solutions;
 
     void fill_next_lhs_batch();
+
+    // we use this attribute as the stable pointer needed to pass to path manager
+    MSSearchStateSolution current_solution;
 
 public:
     // Statistics
