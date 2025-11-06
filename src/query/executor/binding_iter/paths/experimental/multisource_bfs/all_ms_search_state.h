@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <functional>
 #include <map>
 
@@ -24,20 +25,38 @@ public:
 };
 
 struct Transition {
-    const MultiSourceSearchState* previous;
+    const MultiSourceSearchState* state;
     const ObjectId type_id;
     const bool inverse_direction;
+
+    Transition(const MultiSourceSearchState* state, ObjectId type_id, bool inverse_direction) :
+        state(state),
+        type_id(type_id),
+        inverse_direction(inverse_direction)
+    { }
 };
 
-struct Struct { // TODO: rename
+struct PreviousInfo {
     uint64_t distance;
     std::vector<Transition> previous;
 
-    Struct() = default;
+    PreviousInfo() = delete;
 
-    Struct(uint64_t distance) :
+    PreviousInfo(uint64_t distance) :
         distance(distance)
-    { }
+    {
+        assert(distance == 0);
+        if (distance == 0) {
+            previous.emplace_back(nullptr, ObjectId::get_null(), false);
+        }
+    }
+
+    PreviousInfo(uint64_t distance, const Transition& transition) :
+        distance(distance)
+    {
+        assert(distance != 0);
+        previous.push_back(transition);
+    }
 };
 
 struct MultiSourceSearchState {
@@ -47,10 +66,10 @@ struct MultiSourceSearchState {
     // State of the automaton defining the path query
     const uint32_t automaton_state;
 
-    mutable bool in_queue;
+    mutable bool in_queue = true;
 
     // Map starting nodes to a vector of previous states
-    mutable std::map<uint32_t, Struct> previous;
+    mutable std::map<uint32_t, PreviousInfo> start2previous;
 
     MultiSourceSearchState(uint32_t automaton_state, ObjectId node_id) :
         node_id(node_id),
@@ -59,26 +78,34 @@ struct MultiSourceSearchState {
 
     MultiSourceSearchState(const MultiSourceSearchState& other) = delete;
 
-    bool reached_by(uint32_t start_node) const
+    bool reached_by(uint32_t start_idx) const
     {
-        return previous.count(start_node);
+        auto it = start2previous.find(start_idx);
+        return it != start2previous.end();
     }
 
-    bool get_distance(uint32_t start_node) const
+    uint64_t get_distance(uint32_t start_idx) const
     {
-        return previous[start_node].distance;
+        auto it = start2previous.find(start_idx);
+        assert(it != start2previous.end());
+        return it->second.distance;
     }
 
-    void add_new_previous(uint32_t start_node, Transition transition, const uint64_t distance) const
+    void init_previous(uint32_t start_idx) const
     {
-        Struct st(distance);
-        st.previous.push_back(transition);
-        previous[start_node].previous.push_back(transition);
+        start2previous.insert({ start_idx, PreviousInfo(0) });
     }
 
-    void add_previous(uint32_t start_node, Transition transition) const
+    void add_previous(uint32_t start_idx, Transition transition) const
     {
-        previous[start_node].previous.push_back(transition);
+        auto it = start2previous.find(start_idx);
+        assert(it != start2previous.end());
+        it->second.previous.push_back(transition);
+    }
+
+    void add_new_previous(uint32_t start_idx, Transition transition, const uint64_t distance) const
+    {
+        start2previous.insert({ start_idx, PreviousInfo(distance, transition) });
     }
 
     // For ordered set
@@ -109,24 +136,26 @@ struct MultiSourceSearchState {
 
 class MultiSourceSearchStateSolution {
 public:
-    MultiSourceSearchStateSolution(uint64_t start_idx, const MultiSourceSearchState* state);
+    MultiSourceSearchStateSolution() = default;
+
+    MultiSourceSearchStateSolution(uint64_t start_idx, const MultiSourceSearchState* state) :
+        start_idx(start_idx),
+        state(state)
+    { }
 
     // check if the indices are valid
     bool at_end = true;
 
-    const MultiSourceSearchState* state;
-
     uint64_t start_idx;
 
-    // TODO: falta idx de ultima transicion?
+    const MultiSourceSearchState* state;
 
-    std::vector<uint64_t> iter_state;
+    std::vector<std::vector<Transition>::iterator> iter_state_cur;
+    std::vector<std::vector<Transition>::iterator> iter_state_end;
 
     bool has_next();
 
-    void start_enumeration() {
-        at_end = false;
-    }
+    void start_enumeration();
 
     void print(
         std::ostream& os,
@@ -135,13 +164,10 @@ public:
         bool begin_at_left
     ) const;
 
-
-
-    // TODO: do i need this? consider using the next function to extract the nodes and edges
-    // immediately
-    // std::vector<ObjectId> oids;
+    std::vector<ObjectId> current_path_nodes;
+    std::vector<ObjectId> current_path_edges;
+    std::vector<bool> inverse_directions;
 };
-
 
 }} // namespace Paths::AllShortest
 

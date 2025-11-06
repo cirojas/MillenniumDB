@@ -22,10 +22,10 @@ struct MSSearchState {
     // State of the automaton defining the path query
     const uint32_t automaton_state;
 
+    mutable bool in_queue = true;
+
     //  start_index -> Transition
     mutable std::map<uint32_t, Transition> previous;
-
-    mutable bool in_queue = true;
 
     MSSearchState(uint32_t automaton_state, ObjectId node_id) :
         node_id(node_id),

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "graph_models/object_id.h"
 
 namespace Paths {

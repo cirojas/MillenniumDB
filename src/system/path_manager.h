@@ -12,6 +12,7 @@
 #include "query/executor/binding_iter/paths/any_trails/search_state.h"
 #include "query/executor/binding_iter/paths/any_walks/search_state.h"
 #include "query/executor/binding_iter/paths/experimental/multisource_bfs/ms_search_state.h"
+#include "query/executor/binding_iter/paths/experimental/multisource_bfs/all_ms_search_state.h"
 #include "query/executor/binding_iter/paths/experimental/search_state_dijkstra.h"
 #include "query/executor/binding_iter/paths/experimental/multisource_bfs/polaco/search_state.h"
 #include "query/executor/binding_iter/paths/shortest_k/simple/search_state.h"
@@ -54,6 +55,7 @@ public:
     static constexpr uint64_t SHORTEST_K_GROUPS_WALKS_MASK  = 0x00'13'000000000000UL;
     static constexpr uint64_t BFS_MULTIPLE_STARTS_MASK      = 0x00'14'000000000000UL;
     static constexpr uint64_t ANY_SHORTEST_MS_MASK          = 0x00'15'000000000000UL;
+    static constexpr uint64_t ALL_SHORTEST_MS_MASK          = 0x00'16'000000000000UL;
     // static constexpr uint64_t ANY_TRAILS_DIR_MASK          = 0x00''000000000000UL;
 
     // experimental
@@ -89,6 +91,7 @@ public:
     ObjectId set_path(const Paths::ShortestKGroupsWalks::SearchState* visited_pointer, VarId path_var);
     ObjectId set_path(const Paths::Any::MultiSourceSearchState* visited_pointer, VarId path_var);
     ObjectId set_path(const Paths::Any::MSSearchStateSolution* visited_pointer, VarId path_var);
+    ObjectId set_path(const Paths::AllShortest::MultiSourceSearchStateSolution* visited_pointer, VarId path_var);
 
     void for_each(
         uint64_t path_id,

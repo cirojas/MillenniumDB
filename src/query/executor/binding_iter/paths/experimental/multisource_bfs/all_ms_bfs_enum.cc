@@ -49,8 +49,7 @@ void BFSMultiSource<MULTIPLE_FINAL>::fill_next_lhs_batch()
             start_batch.push_back(start_node);
             open.push(state_inserted);
 
-            Transition transition { nullptr, ObjectId::get_null(), false };
-            state_inserted->add_new_previous(start_batch.size() - 1, transition, 0);
+            state_inserted->init_previous(i);
 
             if (automaton.is_final_state[automaton.start_state]) {
                 ready_solutions.emplace_back(i, state_inserted);
@@ -79,55 +78,15 @@ next_begin:
         ready_solutions.pop_back();
         current_solution.start_enumeration();
 
+        // TODO:
         auto path_id = path_manager.set_path(&current_solution, path_var);
         parent_binding->add(path_var, path_id);
         parent_binding->add(start, start_batch[current_solution.start_idx]);
         parent_binding->add(end, current_solution.state->node_id);
 
-        goto next_begin;
+        // goto next_begin;
+        return true;
     }
-    // while (ready_solutions.size() > 0) {
-    //     auto solution = ready_solutions.back();
-
-    //     // TODO: pensar que quiero realmente hacer aca
-    //     auto it = solution.state->solution_states.find(solution.start_idx);
-
-    //     // if a solution state exists, then we find the next path to return
-    //     if (it != solution.end_state->solution_states.end()) {
-    //         if (!it->second->has_next()) {
-    //             ready_solutions.pop_back();
-    //             continue;
-    //         }
-
-    //         auto& current_solution = it->second;
-    //         current_solution->advance();
-
-    //         auto path_id = path_manager.set_path(current_solution.get(), path_var);
-
-    //         parent_binding->add(path_var, path_id);
-    //         parent_binding->add(start, start_batch[solution.start_idx]);
-    //         parent_binding->add(end, solution.end_state->node_id);
-    //         return true;
-    //     } else { // otherwise, we create a solution state
-    //         // idx in the vector of previous states to enumerate
-    //         auto path_idx = solution.end_state->previous[solution.start_idx].previous.size();
-
-    //         // TODO:
-    //         auto new_solution_state = std::make_unique<MultiSourceSearchStateSolution>(path_idx, solution);
-
-    //         auto [it, inserted] = solution.end_state->solution_states.emplace(
-    //             solution.start_idx,
-    //             std::move(new_solution_state)
-    //         );
-
-    //         auto path_id = path_manager.set_path(it->second.get(), path_var);
-
-    //         parent_binding->add(path_var, path_id);
-    //         parent_binding->add(start, start_batch[solution.start_idx]);
-    //         parent_binding->add(end, solution.end_state->node_id);
-    //         return true;
-    //     }
-    // }
 
     while (open.size() > 0) {
         auto current_state = open.front();
@@ -179,13 +138,13 @@ bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MultiSourceSearchSta
                 open.push(reached_state);
 
                 // iterate over the starting nodes that reached the previous state
-                for (auto&& [start_node, cur_previous] : current_state.previous) {
-                    Transition path_transition { &current_state, transition.type_id, transition.inverse };
-                    reached_state->add_new_previous(start_node, path_transition, cur_previous.distance);
+                for (auto&& [start_node, prev_info] : current_state.start2previous) {
+                    Transition path_transition(&current_state, transition.type_id, transition.inverse);
+                    reached_state->add_new_previous(start_node, path_transition, prev_info.distance + 1);
                 }
 
                 if (automaton.is_final_state[reached_state->automaton_state]) {
-                    for (auto&& [start_idx, _] : current_state.previous) {
+                    for (auto&& [start_idx, _] : current_state.start2previous) {
                         ready_solutions.emplace_back(start_idx, reached_state);
                     }
                     return true;
@@ -193,19 +152,21 @@ bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MultiSourceSearchSta
             } else {
                 std::set<int> new_starts;
 
-                for (auto&& [start_node, cur_previous] : current_state.previous) {
-                    if (reached_state->reached_by(start_node)
-                        && cur_previous.distance + 1 == reached_state->get_distance(start_node))
-                    {
-                        Transition path_transition { &current_state, transition.type_id, transition.inverse };
-                        reached_state->add_previous(start_node, path_transition);
+                for (auto&& [start_node, prev_info] : current_state.start2previous) {
+                    if (reached_state->reached_by(start_node)) {
+                        if (prev_info.distance + 1 == reached_state->get_distance(start_node)) {
+                            Transition path_transition(
+                                &current_state,
+                                transition.type_id,
+                                transition.inverse
+                            );
+                            reached_state->add_previous(start_node, path_transition);
 
-                        new_starts.insert(start_node);
-
-                    } else if (!reached_state->reached_by(start_node)) {
-                        Transition path_transition { &current_state, transition.type_id, transition.inverse };
-                        reached_state
-                            ->add_new_previous(start_node, path_transition, cur_previous.distance + 1);
+                            new_starts.insert(start_node);
+                        }
+                    } else {
+                        Transition path_transition(&current_state, transition.type_id, transition.inverse);
+                        reached_state->add_new_previous(start_node, path_transition, prev_info.distance + 1);
 
                         new_starts.insert(start_node);
                     }
