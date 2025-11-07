@@ -2,7 +2,7 @@
 
 using namespace Paths::AllShortest;
 
-bool MultiSourceSearchStateSolution::has_next()
+bool MSSearchStateSolution::has_next()
 {
     for (int i = 0; i < static_cast<int>(iter_state_cur.size()); i++) {
         iter_state_cur[i]++;
@@ -31,7 +31,7 @@ bool MultiSourceSearchStateSolution::has_next()
     return false;
 }
 
-void MultiSourceSearchStateSolution::start_enumeration()
+void MSSearchStateSolution::start_enumeration()
 {
     at_end = false;
 
@@ -70,26 +70,24 @@ void MultiSourceSearchStateSolution::start_enumeration()
     }
 }
 
-void MultiSourceSearchStateSolution::print(
-    std::ostream& os,
-    std::function<void(std::ostream& os, ObjectId)> print_node,
-    std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
+void MSSearchStateSolution::for_each(
+    std::function<void(ObjectId)> node_func,
+    std::function<void(ObjectId, bool)> edge_func,
     bool begin_at_left
 ) const
 {
     if (!begin_at_left) {
-        print_node(os, current_path_nodes.back());
+        node_func(current_path_nodes.back());
         for (int i = current_path_edges.size() - 1; i >= 0; --i) {
-            print_edge(os, current_path_edges[i], inverse_directions[i]);
-            print_node(os, current_path_nodes[i]);
+            edge_func(current_path_edges[i], inverse_directions[i]);
+            node_func(current_path_nodes[i]);
         }
     } else {
         for (int i = 0; i < (int) current_path_edges.size(); ++i) {
-            print_node(os, current_path_nodes[i]);
-            print_edge(os, current_path_edges[i], inverse_directions[i]);
+            node_func(current_path_nodes[i]);
+            edge_func(current_path_edges[i], inverse_directions[i]);
         }
 
-        print_node(os, current_path_nodes.back());
+        node_func(current_path_nodes.back());
     }
-    os.flush();
 }

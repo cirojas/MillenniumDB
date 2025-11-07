@@ -182,13 +182,6 @@ ObjectId PathManager::set_path(const Paths::ShortestKGroupsWalks::SearchState* v
     return ObjectId(ObjectId::MASK_PATH | SHORTEST_K_GROUPS_WALKS_MASK | path_var.id);
 }
 
-ObjectId PathManager::set_path(const Paths::Any::MultiSourceSearchState* visited_pointer, VarId path_var)
-{
-    auto index = get_thread_index();
-    paths[index][path_var.id] = visited_pointer;
-    return ObjectId(ObjectId::MASK_PATH | BFS_MULTIPLE_STARTS_MASK | path_var.id);
-}
-
 ObjectId PathManager::set_path(const Paths::Any::MSSearchStateSolution* visited_pointer, VarId path_var)
 {
     auto index = get_thread_index();
@@ -196,7 +189,7 @@ ObjectId PathManager::set_path(const Paths::Any::MSSearchStateSolution* visited_
     return ObjectId(ObjectId::MASK_PATH | ANY_SHORTEST_MS_MASK | path_var.id);
 }
 
-ObjectId PathManager::set_path(const Paths::AllShortest::MultiSourceSearchStateSolution* visited_pointer, VarId path_var)
+ObjectId PathManager::set_path(const Paths::AllShortest::MSSearchStateSolution* visited_pointer, VarId path_var)
 {
     auto index = get_thread_index();
     paths[index][path_var.id] = visited_pointer;
@@ -330,13 +323,6 @@ void PathManager::for_each(
         state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
-    case BFS_MULTIPLE_STARTS_MASK: {
-        auto state = reinterpret_cast<const Paths::Any::MultiSourceSearchState*>(
-            paths[index][decoded_id]
-        );
-        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
-        break;
-    }
     case ANY_SHORTEST_MS_MASK: {
         auto state = reinterpret_cast<const Paths::Any::MSSearchStateSolution*>(
             paths[index][decoded_id]
@@ -345,7 +331,7 @@ void PathManager::for_each(
         break;
     }
     case ALL_SHORTEST_MS_MASK: {
-         auto state = reinterpret_cast<const Paths::AllShortest::MultiSourceSearchStateSolution*>(
+         auto state = reinterpret_cast<const Paths::AllShortest::MSSearchStateSolution*>(
             paths[index][decoded_id]
         );
         state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);

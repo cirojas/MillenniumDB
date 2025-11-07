@@ -8,7 +8,7 @@
 
 namespace Paths { namespace AllShortest {
 
-struct MultiSourceSearchState;
+struct MSSearchState;
 
 class DummySet {
 public:
@@ -25,11 +25,11 @@ public:
 };
 
 struct Transition {
-    const MultiSourceSearchState* state;
+    const MSSearchState* state;
     const ObjectId type_id;
     const bool inverse_direction;
 
-    Transition(const MultiSourceSearchState* state, ObjectId type_id, bool inverse_direction) :
+    Transition(const MSSearchState* state, ObjectId type_id, bool inverse_direction) :
         state(state),
         type_id(type_id),
         inverse_direction(inverse_direction)
@@ -59,7 +59,7 @@ struct PreviousInfo {
     }
 };
 
-struct MultiSourceSearchState {
+struct MSSearchState {
     // The ID of the node the algorithm has reached
     const ObjectId node_id;
 
@@ -71,12 +71,12 @@ struct MultiSourceSearchState {
     // Map starting nodes to a vector of previous states
     mutable std::map<uint32_t, PreviousInfo> start2previous;
 
-    MultiSourceSearchState(uint32_t automaton_state, ObjectId node_id) :
+    MSSearchState(uint32_t automaton_state, ObjectId node_id) :
         node_id(node_id),
         automaton_state(automaton_state)
     { }
 
-    MultiSourceSearchState(const MultiSourceSearchState& other) = delete;
+    MSSearchState(const MSSearchState& other) = delete;
 
     bool reached_by(uint32_t start_idx) const
     {
@@ -109,7 +109,7 @@ struct MultiSourceSearchState {
     }
 
     // For ordered set
-    bool operator<(const MultiSourceSearchState& other) const
+    bool operator<(const MSSearchState& other) const
     {
         if (automaton_state < other.automaton_state) {
             return true;
@@ -121,24 +121,24 @@ struct MultiSourceSearchState {
     }
 
     // Overloading the ostream operator<<
-    friend std::ostream& operator<<(std::ostream& os, const MultiSourceSearchState& state)
+    friend std::ostream& operator<<(std::ostream& os, const MSSearchState& state)
     {
-        os << "MultiSourceSearchState:" << " automaton_state(" << state.automaton_state << "), node_id("
+        os << "MSSearchState:" << " automaton_state(" << state.automaton_state << "), node_id("
            << state.node_id << ")";
         return os;
     }
     // For unordered set
-    bool operator==(const MultiSourceSearchState& other) const
+    bool operator==(const MSSearchState& other) const
     {
         return automaton_state == other.automaton_state && node_id == other.node_id;
     }
 };
 
-class MultiSourceSearchStateSolution {
+class MSSearchStateSolution {
 public:
-    MultiSourceSearchStateSolution() = default;
+    MSSearchStateSolution() = default;
 
-    MultiSourceSearchStateSolution(uint64_t start_idx, const MultiSourceSearchState* state) :
+    MSSearchStateSolution(uint64_t start_idx, const MSSearchState* state) :
         start_idx(start_idx),
         state(state)
     { }
@@ -148,7 +148,7 @@ public:
 
     uint64_t start_idx;
 
-    const MultiSourceSearchState* state;
+    const MSSearchState* state;
 
     std::vector<std::vector<Transition>::iterator> iter_state_cur;
     std::vector<std::vector<Transition>::iterator> iter_state_end;
@@ -157,10 +157,9 @@ public:
 
     void start_enumeration();
 
-    void print(
-        std::ostream& os,
-        std::function<void(std::ostream& os, ObjectId)> print_node,
-        std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
+    void for_each(
+        std::function<void(ObjectId)> node_func,
+        std::function<void(ObjectId, bool)> edge_func,
         bool begin_at_left
     ) const;
 
@@ -173,8 +172,8 @@ public:
 
 // For unordered set
 template<>
-struct std::hash<Paths::AllShortest::MultiSourceSearchState> {
-    std::size_t operator()(const Paths::AllShortest::MultiSourceSearchState& lhs) const
+struct std::hash<Paths::AllShortest::MSSearchState> {
+    std::size_t operator()(const Paths::AllShortest::MSSearchState& lhs) const
     {
         return lhs.automaton_state ^ lhs.node_id.id;
     }

@@ -21,7 +21,7 @@ template<bool MULTIPLE_FINAL>
 void BFSMultiSource<MULTIPLE_FINAL>::_reset()
 {
     // Empty open and visited
-    std::queue<const MultiSourceSearchState*> empty;
+    std::queue<const MSSearchState*> empty;
     open.swap(empty);
 
     lhs->reset();
@@ -109,7 +109,7 @@ next_begin:
 }
 
 template<bool MULTIPLE_FINAL>
-bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MultiSourceSearchState& current_state)
+bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MSSearchState& current_state)
 {
     // Check if this is the first time that current_state is explored
     if (iter->at_end()) {

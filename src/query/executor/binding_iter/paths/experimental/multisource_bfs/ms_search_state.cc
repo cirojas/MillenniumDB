@@ -2,10 +2,9 @@
 
 using namespace Paths::Any;
 
-void MSSearchStateSolution::print(
-    std::ostream& os,
-    std::function<void(std::ostream& os, ObjectId)> print_node,
-    std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
+void MSSearchStateSolution::for_each(
+    std::function<void(ObjectId)> node_func,
+    std::function<void(ObjectId, bool)> edge_func,
     bool begin_at_left
 ) const
 {
@@ -33,10 +32,10 @@ void MSSearchStateSolution::print(
             it = cur_state->previous.find(start_idx);
         }
 
-        print_node(os, start);
+        node_func(start);
         for (int_fast32_t i = nodes.size() - 1; i >= 0; --i) {
-            print_edge(os, edges[i], inverse_directions[i]);
-            print_node(os, nodes[i]);
+            edge_func(edges[i], inverse_directions[i]);
+            node_func(nodes[i]);
         }
     } else {
         auto cur_state = this->state;
@@ -47,13 +46,13 @@ void MSSearchStateSolution::print(
             if (transition.state == nullptr) {
                 break;
             }
-            print_node(os, cur_state->node_id);
-            print_edge(os, transition.type_id, !transition.inverse_direction);
+            node_func(cur_state->node_id);
+            edge_func(transition.type_id, !transition.inverse_direction);
 
             cur_state = transition.state;
             it = cur_state->previous.find(start_idx);
         }
 
-        print_node(os, start);
+        node_func(start);
     }
 }

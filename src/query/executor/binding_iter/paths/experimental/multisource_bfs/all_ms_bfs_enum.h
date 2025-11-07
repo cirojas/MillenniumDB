@@ -8,7 +8,6 @@
 
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/experimental/multisource_bfs/all_ms_search_state.h"
-#include "query/executor/binding_iter/paths/experimental/multisource_bfs/endpoint_solution.h"
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
 #include "query/parser/paths/automaton/rpq_automaton.h"
 
@@ -19,7 +18,7 @@ class DummyMSSet {
 public:
     static inline void clear() { }
 
-    static inline std::pair<bool, bool> insert(const MultiSourceSearchState*)
+    static inline std::pair<bool, bool> insert(const MSSearchState*)
     {
         return { true, true };
     }
@@ -40,7 +39,7 @@ private:
     Binding* parent_binding;
 
     // Queue for BFS. Pointers point to the states in visited
-    std::queue<const MultiSourceSearchState*> open;
+    std::queue<const MSSearchState*> open;
 
     // Iterator for current node expansion
     std::unique_ptr<EdgeIter> iter;
@@ -50,18 +49,18 @@ private:
 
     typename std::conditional<
         MULTIPLE_FINAL,
-        boost::unordered_flat_set<const MultiSourceSearchState*>,
+        boost::unordered_flat_set<const MSSearchState*>,
         DummyMSSet>::type reached_final;
 
     bool lhs_at_end;
 
     std::vector<ObjectId> start_batch;
 
-    std::vector<MultiSourceSearchStateSolution> ready_solutions;
+    std::vector<MSSearchStateSolution> ready_solutions;
 
-    MultiSourceSearchStateSolution current_solution;
+    MSSearchStateSolution current_solution;
 
-    boost::unordered_node_set<MultiSourceSearchState, std::hash<MultiSourceSearchState>> visited;
+    boost::unordered_node_set<MSSearchState, std::hash<MSSearchState>> visited;
 
     void fill_next_lhs_batch();
 
@@ -91,7 +90,7 @@ public:
     void print(std::ostream& os, int indent, bool stats) const override;
 
     // Expand neighbors from current state
-    bool expand_neighbors(const MultiSourceSearchState& current_state);
+    bool expand_neighbors(const MSSearchState& current_state);
 
     void assign_nulls() override
     {
@@ -99,7 +98,7 @@ public:
     }
 
     // Set iterator for current node + transition
-    inline void set_iter(const MultiSourceSearchState& s)
+    inline void set_iter(const MSSearchState& s)
     {
         // Get current transition object from automaton
         auto& transition = automaton.from_to_connections[s.automaton_state][current_transition];
