@@ -2,8 +2,6 @@
 
 #include "system/path_manager.h"
 
-#include <iostream>
-
 using namespace Paths::AllShortest;
 
 template<bool MULTIPLE_FINAL>
@@ -141,14 +139,11 @@ bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MSSearchState& curre
         while (iter->next()) {
             auto reached_node = ObjectId(iter->get_reached_node());
 
-            std::cout << current_state.node_id << "->" << reached_node << std::endl;
-
             auto visited_state = visited.emplace(transition.to, reached_node);
             auto reached_state = visited_state.first.operator->();
 
             // If next state was visited for the first time
             if (visited_state.second) {
-                std::cout << "  visited for first time" << std::endl;
                 open.push(reached_state);
 
                 // iterate over the starting nodes that reached the previous state
@@ -165,14 +160,6 @@ bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MSSearchState& curre
                 }
             } else {
                 std::set<int> new_starts;
-
-                std::cout << "  not visited for first time" << std::endl;
-                for (auto&& [start_idx, prev_info] : current_state.start2previous) {
-                    std::cout << "  current idx " << start_idx << ": distance " << prev_info.distance << std::endl;
-                }
-                for (auto&& [start_idx, prev_info] : reached_state->start2previous) {
-                    std::cout << "  reached idx " << start_idx << ": distance " << prev_info.distance << std::endl;
-                }
 
                 for (auto&& [start_idx, prev_info] : current_state.start2previous) {
                     if (auto it = reached_state->start2previous.find(start_idx); it != reached_state->start2previous.end()) {

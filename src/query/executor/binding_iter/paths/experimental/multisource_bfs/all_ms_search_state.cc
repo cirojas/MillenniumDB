@@ -7,7 +7,7 @@ bool MSSearchStateSolution::has_next()
     for (int i = 0; i < static_cast<int>(iter_state_cur.size()); i++) {
         iter_state_cur[i]++;
         if (iter_state_cur[i] != iter_state_end[i]) {
-            Transition* current_transition = iter_state_cur[i].base();
+            auto current_transition = iter_state_cur[i];
             for (int j = i - 1; j >= 0; j--) {
                 current_path_edges[j] = current_transition->type_id;
                 inverse_directions[j] = current_transition->inverse_direction;
@@ -17,7 +17,7 @@ bool MSSearchStateSolution::has_next()
                 iter_state_cur[j] = it->second.previous.begin();
                 iter_state_end[j] = it->second.previous.end();
 
-                current_transition = iter_state_cur[j].base();
+                current_transition = iter_state_cur[j];
 
                 if (j == 0) {
                     assert(current_transition->state == nullptr);
@@ -48,7 +48,7 @@ void MSSearchStateSolution::start_enumeration()
 
     current_path_nodes[path_distance] = state->node_id;
 
-    Transition* current_transition = &previous_info_it->second.previous.back();
+    auto current_transition = std::prev(previous_info_it->second.previous.end());
     for (int j = iter_state_cur.size() - 1; j >= 0; j--) {
         assert(current_transition->state != nullptr);
         current_path_edges[j] = current_transition->type_id;
@@ -60,7 +60,7 @@ void MSSearchStateSolution::start_enumeration()
         iter_state_cur[j] = it->second.previous.begin();
         iter_state_end[j] = it->second.previous.end();
 
-        current_transition = iter_state_cur[j].base();
+        current_transition = iter_state_cur[j];
         if (j == 0) {
             assert(current_transition->state == nullptr);
         }

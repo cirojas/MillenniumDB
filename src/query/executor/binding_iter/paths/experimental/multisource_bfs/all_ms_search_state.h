@@ -3,6 +3,7 @@
 #include <cassert>
 #include <functional>
 #include <map>
+#include <set>
 
 #include "graph_models/object_id.h"
 
@@ -34,11 +35,21 @@ struct Transition {
         type_id(type_id),
         inverse_direction(inverse_direction)
     { }
+
+    bool operator<(const Transition& other) const
+    {
+        if (this->state != other.state)
+            return this->state < other.state;
+        else if (this->type_id != other.type_id)
+            return this->type_id < other.type_id;
+        else
+            return this->inverse_direction < other.inverse_direction;
+    }
 };
 
 struct PreviousInfo {
     uint64_t distance;
-    std::vector<Transition> previous;
+    std::set<Transition> previous;
 
     PreviousInfo() = delete;
 
@@ -47,7 +58,7 @@ struct PreviousInfo {
     {
         assert(distance == 0);
         if (distance == 0) {
-            previous.emplace_back(nullptr, ObjectId::get_null(), false);
+            previous.emplace(nullptr, ObjectId::get_null(), false);
         }
     }
 
@@ -55,18 +66,13 @@ struct PreviousInfo {
         distance(distance)
     {
         assert(distance != 0);
-        previous.push_back(transition);
+        previous.insert(transition);
     }
 
     bool try_add_previous(Transition transition)
     {
-        for (auto& existing_transition : previous) {
-            if (existing_transition.state == transition.state) {
-                return false;
-            }
-        }
-        previous.push_back(transition);
-        return true;
+        auto&& [_, inserted] = previous.insert(transition);
+        return inserted;
     }
 };
 
@@ -121,8 +127,8 @@ struct MSSearchState {
     // Overloading the ostream operator<<
     friend std::ostream& operator<<(std::ostream& os, const MSSearchState& state)
     {
-        os << "MSSearchState:" << " automaton_state(" << state.automaton_state << "), node_id("
-           << state.node_id << ")";
+        os << "MSSearchState:"
+           << " automaton_state(" << state.automaton_state << "), node_id(" << state.node_id << ")";
         return os;
     }
     // For unordered set
@@ -148,8 +154,8 @@ public:
 
     const MSSearchState* state;
 
-    std::vector<std::vector<Transition>::iterator> iter_state_cur;
-    std::vector<std::vector<Transition>::iterator> iter_state_end;
+    std::vector<std::set<Transition>::iterator> iter_state_cur;
+    std::vector<std::set<Transition>::iterator> iter_state_end;
 
     bool has_next();
 
