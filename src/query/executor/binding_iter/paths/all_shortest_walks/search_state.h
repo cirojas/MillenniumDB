@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-#include <ostream>
 
 #include "graph_models/object_id.h"
 

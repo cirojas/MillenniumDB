@@ -38,9 +38,6 @@ void MSSearchStateSolution::start_enumeration()
     auto previous_info_it = state->start2previous.find(start_idx);
     assert(previous_info_it != state->start2previous.end());
 
-    // TODO: maybe save additional info for the first transition?
-
-    // TODO: previous_info.distance is the correct size?
     auto path_distance = previous_info_it->second.distance;
     iter_state_cur.resize(path_distance);
     iter_state_end.resize(path_distance);

@@ -7,7 +7,7 @@
 #include <boost/unordered/unordered_node_set.hpp>
 
 #include "query/executor/binding_iter.h"
-#include "query/executor/binding_iter/paths/experimental/multisource_bfs/only_endpoint.h"
+#include "query/executor/binding_iter/paths/experimental/multisource_bfs/endpoint_solution.h"
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
 #include "query/parser/paths/automaton/rpq_automaton.h"
 

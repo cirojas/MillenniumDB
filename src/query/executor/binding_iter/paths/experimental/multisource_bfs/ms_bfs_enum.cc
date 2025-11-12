@@ -122,13 +122,13 @@ bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MSSearchState& curre
 
         // Iterate over records until a final state is reached
         while (iter->next()) {
-            auto reached_node = ObjectId(iter->get_reached_node());
+            ObjectId reached_node(iter->get_reached_node());
 
             auto visited_state = visited.emplace(transition.to, reached_node);
             auto reached_state = visited_state.first.operator->();
 
-            // If next state was visited for the first time
             if (visited_state.second) {
+                // reached_state is visited for the first time
                 open.push(reached_state);
 
                 // iterate over the starting nodes that reached the previous state
@@ -144,6 +144,7 @@ bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MSSearchState& curre
                     return true;
                 }
             } else {
+                // reached_state was present in visited before
                 std::set<int> new_starts;
 
                 for (auto&& [start_node_idx, _] : current_state.previous) {

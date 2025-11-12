@@ -3,25 +3,31 @@
 #include <memory>
 #include <queue>
 
+#include <boost/unordered/unordered_flat_map.hpp>
 #include <boost/unordered/unordered_flat_set.hpp>
 #include <boost/unordered/unordered_node_set.hpp>
 
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/experimental/multisource_bfs/all_ms_search_state.h"
+#include "query/executor/binding_iter/paths/experimental/multisource_bfs/endpoint_solution.h"
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
 #include "query/parser/paths/automaton/rpq_automaton.h"
 
 namespace Paths { namespace AllShortest {
 
 // Dummy structure for template usage
-class DummyMSSet {
+class DummyMSMap {
 public:
     static inline void clear() { }
-
-    static inline std::pair<bool, bool> insert(const MSSearchState*)
+    static inline std::pair<uint64_t, size_t>* end()
     {
-        return { true, true };
+        return nullptr;
     }
+    static inline std::pair<uint64_t, size_t>* find(uint64_t)
+    {
+        return nullptr;
+    }
+    static inline void insert(std::pair<uint64_t, size_t>) { }
 };
 
 template<bool MULTIPLE_FINAL>
@@ -49,8 +55,8 @@ private:
 
     typename std::conditional<
         MULTIPLE_FINAL,
-        boost::unordered_flat_set<const MSSearchState*>,
-        DummyMSSet>::type reached_final;
+        boost::unordered_flat_map<EndpointSolution, size_t, EndpointSolution::Hasher>,
+        DummyMSMap>::type optimal_distances;
 
     bool lhs_at_end;
 

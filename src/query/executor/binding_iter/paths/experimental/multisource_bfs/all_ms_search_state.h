@@ -57,6 +57,17 @@ struct PreviousInfo {
         assert(distance != 0);
         previous.push_back(transition);
     }
+
+    bool try_add_previous(Transition transition)
+    {
+        for (auto& existing_transition : previous) {
+            if (existing_transition.state == transition.state) {
+                return false;
+            }
+        }
+        previous.push_back(transition);
+        return true;
+    }
 };
 
 struct MSSearchState {
@@ -78,12 +89,6 @@ struct MSSearchState {
 
     MSSearchState(const MSSearchState& other) = delete;
 
-    bool reached_by(uint32_t start_idx) const
-    {
-        auto it = start2previous.find(start_idx);
-        return it != start2previous.end();
-    }
-
     uint64_t get_distance(uint32_t start_idx) const
     {
         auto it = start2previous.find(start_idx);
@@ -94,13 +99,6 @@ struct MSSearchState {
     void init_previous(uint32_t start_idx) const
     {
         start2previous.insert({ start_idx, PreviousInfo(0) });
-    }
-
-    void add_previous(uint32_t start_idx, Transition transition) const
-    {
-        auto it = start2previous.find(start_idx);
-        assert(it != start2previous.end());
-        it->second.previous.push_back(transition);
     }
 
     void add_new_previous(uint32_t start_idx, Transition transition, const uint64_t distance) const

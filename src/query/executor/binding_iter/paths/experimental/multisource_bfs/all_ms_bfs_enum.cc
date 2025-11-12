@@ -35,7 +35,7 @@ template<bool MULTIPLE_FINAL>
 void BFSMultiSource<MULTIPLE_FINAL>::fill_next_lhs_batch()
 {
     start_batch.clear();
-    reached_final.clear();
+    optimal_distances.clear();
     visited.clear();
     if (lhs_at_end) {
         return;
@@ -71,20 +71,31 @@ next_begin:
             return true;
         }
     }
-    if (ready_solutions.size() > 0) {
-        // TODO: discard duplicates if MULTIPLE_FINAL (discard if distance is greater)?
-        // TODO: maybe discard before adding to ready_solutions
+    while (ready_solutions.size() > 0) {
         current_solution = ready_solutions.back();
         ready_solutions.pop_back();
+
+        // discard final states with non optimal distance
+        if constexpr (MULTIPLE_FINAL) {
+            EndpointSolution k(current_solution.start_idx, current_solution.state->node_id);
+            auto current_solution_distance = current_solution.state->get_distance(current_solution.start_idx);
+            auto previous_solution = optimal_distances.find(k);
+            if (previous_solution != optimal_distances.end()) {
+                if (previous_solution->second != current_solution_distance) {
+                    continue;
+                }
+            } else {
+                optimal_distances.insert({ k, current_solution_distance });
+            }
+        }
+
         current_solution.start_enumeration();
 
-        // TODO:
         auto path_id = path_manager.set_path(&current_solution, path_var);
         parent_binding->add(path_var, path_id);
         parent_binding->add(start, start_batch[current_solution.start_idx]);
         parent_binding->add(end, current_solution.state->node_id);
 
-        // goto next_begin;
         return true;
     }
 
@@ -130,17 +141,20 @@ bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MSSearchState& curre
         while (iter->next()) {
             auto reached_node = ObjectId(iter->get_reached_node());
 
+            std::cout << current_state.node_id << "->" << reached_node << std::endl;
+
             auto visited_state = visited.emplace(transition.to, reached_node);
             auto reached_state = visited_state.first.operator->();
 
             // If next state was visited for the first time
             if (visited_state.second) {
+                std::cout << "  visited for first time" << std::endl;
                 open.push(reached_state);
 
                 // iterate over the starting nodes that reached the previous state
-                for (auto&& [start_node, prev_info] : current_state.start2previous) {
+                for (auto&& [start_idx, prev_info] : current_state.start2previous) {
                     Transition path_transition(&current_state, transition.type_id, transition.inverse);
-                    reached_state->add_new_previous(start_node, path_transition, prev_info.distance + 1);
+                    reached_state->add_new_previous(start_idx, path_transition, prev_info.distance + 1);
                 }
 
                 if (automaton.is_final_state[reached_state->automaton_state]) {
@@ -152,23 +166,32 @@ bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MSSearchState& curre
             } else {
                 std::set<int> new_starts;
 
-                for (auto&& [start_node, prev_info] : current_state.start2previous) {
-                    if (reached_state->reached_by(start_node)) {
-                        if (prev_info.distance + 1 == reached_state->get_distance(start_node)) {
+                std::cout << "  not visited for first time" << std::endl;
+                for (auto&& [start_idx, prev_info] : current_state.start2previous) {
+                    std::cout << "  current idx " << start_idx << ": distance " << prev_info.distance << std::endl;
+                }
+                for (auto&& [start_idx, prev_info] : reached_state->start2previous) {
+                    std::cout << "  reached idx " << start_idx << ": distance " << prev_info.distance << std::endl;
+                }
+
+                for (auto&& [start_idx, prev_info] : current_state.start2previous) {
+                    if (auto it = reached_state->start2previous.find(start_idx); it != reached_state->start2previous.end()) {
+                        if (prev_info.distance + 1 == it->second.distance) {
                             Transition path_transition(
                                 &current_state,
                                 transition.type_id,
                                 transition.inverse
                             );
-                            reached_state->add_previous(start_node, path_transition);
 
-                            new_starts.insert(start_node);
+                            if (it->second.try_add_previous(path_transition)) {
+                                new_starts.insert(start_idx);
+                            }
                         }
                     } else {
                         Transition path_transition(&current_state, transition.type_id, transition.inverse);
-                        reached_state->add_new_previous(start_node, path_transition, prev_info.distance + 1);
+                        reached_state->add_new_previous(start_idx, path_transition, prev_info.distance + 1);
 
-                        new_starts.insert(start_node);
+                        new_starts.insert(start_idx);
                     }
                 }
 
