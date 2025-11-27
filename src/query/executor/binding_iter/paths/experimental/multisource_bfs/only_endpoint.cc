@@ -178,7 +178,8 @@ void BFSMultipleStartsOnlyEndpoint<MULTIPLE_FINAL>::print(std::ostream& os, int 
            << "]\n";
     }
     os << std::string(indent, ' ') << "Paths::Any::BFSMultipleStartsOnlyEndpoint(start: " << start
-       << ", end: " << end << ")";
+       << ", end: " << end << ")\n";
+    lhs->print(os, indent + 2, stats);
 }
 
 template class Paths::Any::BFSMultipleStartsOnlyEndpoint<true>;

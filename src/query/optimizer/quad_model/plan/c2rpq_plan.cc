@@ -138,5 +138,7 @@ std::unique_ptr<BindingIter> C2RPQ_Plan::get_binding_iter()
 
     begin_at_left[path_var.id] = start_at_from != right_to_left;
     const RPQ_DFA& used_automaton = start_at_from ? automaton : automaton_inverted;
-    return get_enum(used_automaton, from.get_var(), to.get_var());
+    Id start = start_at_from ? from : to;
+    Id end   = start_at_from ? to   : from;
+    return get_enum(used_automaton, start.get_var(), end.get_var());
 }

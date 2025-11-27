@@ -193,7 +193,8 @@ void BFSMultiSource<MULTIPLE_FINAL>::print(std::ostream& os, int indent, bool st
            << "]\n";
     }
     os << std::string(indent, ' ') << "Paths::Any::BFSMultiSource(start: " << start << ", end: " << end
-       << ")";
+       << ")\n";
+    lhs->print(os, indent + 2, stats);
 }
 
 template class Paths::Any::BFSMultiSource<true>;
