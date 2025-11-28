@@ -85,25 +85,48 @@ std::unique_ptr<BindingIter> C2RPQ_Plan::get_enum(const RPQ_DFA& automaton, VarI
     auto provider = get_provider(automaton);
     switch (path_semantic) {
     case PathSemantic::DEFAULT:
+    case PathSemantic::ANY_SHORTEST_WALKS:
     case PathSemantic::ANY_WALKS: {
-        if (automaton.total_final_states > 1) {
-            return std::make_unique<Any::BFSMultiSource<true>>(
-                std::move(lhs),
-                path_var,
-                start,
-                end,
-                automaton,
-                std::move(provider)
-            );
+        if (get_query_ctx().is_internal(path_var)) {
+            if (automaton.total_final_states > 1) {
+                return std::make_unique<Any::BFSMultipleStartsOnlyEndpoint<true>>(
+                    std::move(lhs),
+                    path_var,
+                    start,
+                    end,
+                    automaton,
+                    std::move(provider)
+                );
+            } else {
+                return std::make_unique<Any::BFSMultipleStartsOnlyEndpoint<false>>(
+                    std::move(lhs),
+                    path_var,
+                    start,
+                    end,
+                    automaton,
+                    std::move(provider)
+                );
+            }
         } else {
-            return std::make_unique<Any::BFSMultiSource<false>>(
-                std::move(lhs),
-                path_var,
-                start,
-                end,
-                automaton,
-                std::move(provider)
-            );
+            if (automaton.total_final_states > 1) {
+                return std::make_unique<Any::BFSMultiSource<true>>(
+                    std::move(lhs),
+                    path_var,
+                    start,
+                    end,
+                    automaton,
+                    std::move(provider)
+                );
+            } else {
+                return std::make_unique<Any::BFSMultiSource<false>>(
+                    std::move(lhs),
+                    path_var,
+                    start,
+                    end,
+                    automaton,
+                    std::move(provider)
+                );
+            }
         }
     }
     case PathSemantic::ALL_SHORTEST_WALKS: {
