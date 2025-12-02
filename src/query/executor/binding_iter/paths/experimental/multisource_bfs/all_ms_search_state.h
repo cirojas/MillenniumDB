@@ -3,7 +3,6 @@
 #include <cassert>
 #include <functional>
 #include <map>
-#include <set>
 
 #include "graph_models/object_id.h"
 
@@ -45,11 +44,17 @@ struct Transition {
         else
             return this->inverse_direction < other.inverse_direction;
     }
+
+    bool operator==(const Transition& other) const
+    {
+        return this->state == other.state && this->type_id < other.type_id
+            && this->inverse_direction < other.inverse_direction;
+    }
 };
 
 struct PreviousInfo {
     uint64_t distance;
-    std::set<Transition> previous;
+    std::vector<Transition> previous;
 
     PreviousInfo() = delete;
 
@@ -58,7 +63,7 @@ struct PreviousInfo {
     {
         assert(distance == 0);
         if (distance == 0) {
-            previous.emplace(nullptr, ObjectId::get_null(), false);
+            previous.emplace_back(nullptr, ObjectId::get_null(), false);
         }
     }
 
@@ -66,13 +71,20 @@ struct PreviousInfo {
         distance(distance)
     {
         assert(distance != 0);
-        previous.insert(transition);
+        previous.push_back(transition);
     }
 
-    bool try_add_previous(Transition transition)
+    bool try_add_previous(const Transition& transition)
     {
-        auto&& [_, inserted] = previous.insert(transition);
-        return inserted;
+        // auto&& [_, inserted] = previous.insert(transition);
+        // return inserted;
+        for (auto& p : previous) {
+            if (p == transition) {
+                return false;
+            }
+        }
+        previous.push_back(transition);
+        return true;
     }
 };
 
@@ -154,8 +166,8 @@ public:
 
     const MSSearchState* state;
 
-    std::vector<std::set<Transition>::iterator> iter_state_cur;
-    std::vector<std::set<Transition>::iterator> iter_state_end;
+    std::vector<std::vector<Transition>::iterator> iter_state_cur;
+    std::vector<std::vector<Transition>::iterator> iter_state_end;
 
     bool has_next();
 
