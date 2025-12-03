@@ -45,11 +45,7 @@ struct Transition {
             return this->inverse_direction < other.inverse_direction;
     }
 
-    bool operator==(const Transition& other) const
-    {
-        return this->state == other.state && this->type_id == other.type_id
-            && this->inverse_direction == other.inverse_direction;
-    }
+    bool operator==(const Transition& other) const;
 };
 
 struct PreviousInfo {
