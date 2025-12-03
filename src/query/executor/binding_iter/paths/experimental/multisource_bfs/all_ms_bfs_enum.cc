@@ -148,12 +148,18 @@ bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MSSearchState& curre
 
                 // iterate over the starting nodes that reached the previous state
                 for (auto&& [start_idx, prev_info] : current_state.start2previous) {
+                    if (prev_info.distance != current_distance) {
+                        continue;
+                    }
                     Transition path_transition(&current_state, transition.type_id, transition.inverse);
                     reached_state->add_new_previous(start_idx, path_transition, prev_info.distance + 1);
                 }
 
                 if (automaton.is_final_state[reached_state->automaton_state]) {
-                    for (auto&& [start_idx, _] : current_state.start2previous) {
+                    for (auto&& [start_idx, prev_info] : current_state.start2previous) {
+                        if (prev_info.distance != current_distance) {
+                            continue;
+                        }
                         ready_solutions.emplace_back(start_idx, reached_state);
                     }
                     return true;
