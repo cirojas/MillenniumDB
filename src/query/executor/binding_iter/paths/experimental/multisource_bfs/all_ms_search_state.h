@@ -93,8 +93,6 @@ struct MSSearchState {
     // State of the automaton defining the path query
     const uint32_t automaton_state;
 
-    mutable bool in_queue = true;
-
     // Map starting nodes to a vector of previous states
     mutable std::map<uint32_t, PreviousInfo> start2previous;
 
