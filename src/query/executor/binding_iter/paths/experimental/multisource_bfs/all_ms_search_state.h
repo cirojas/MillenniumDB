@@ -47,8 +47,8 @@ struct Transition {
 
     bool operator==(const Transition& other) const
     {
-        return this->state == other.state && this->type_id < other.type_id
-            && this->inverse_direction < other.inverse_direction;
+        return this->state == other.state && this->type_id == other.type_id
+            && this->inverse_direction == other.inverse_direction;
     }
 };
 
@@ -76,8 +76,6 @@ struct PreviousInfo {
 
     bool try_add_previous(const Transition& transition)
     {
-        // auto&& [_, inserted] = previous.insert(transition);
-        // return inserted;
         for (auto& p : previous) {
             if (p == transition) {
                 return false;
@@ -127,10 +125,8 @@ struct MSSearchState {
     // For ordered set
     bool operator<(const MSSearchState& other) const
     {
-        if (automaton_state < other.automaton_state) {
-            return true;
-        } else if (other.automaton_state < automaton_state) {
-            return false;
+        if (automaton_state != other.automaton_state) {
+            return automaton_state < other.automaton_state;
         } else {
             return node_id < other.node_id;
         }
