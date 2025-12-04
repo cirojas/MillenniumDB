@@ -2,6 +2,12 @@
 
 using namespace Paths::AllShortest;
 
+bool Transition::operator==(const Transition& other) const
+{
+    return this->state == other.state && this->type_id == other.type_id
+        && this->inverse_direction == other.inverse_direction;
+}
+
 bool MSSearchStateSolution::has_next()
 {
     for (int i = 0; i < static_cast<int>(iter_state_cur.size()); i++) {

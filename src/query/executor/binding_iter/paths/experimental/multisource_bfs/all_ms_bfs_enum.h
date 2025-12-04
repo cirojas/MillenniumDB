@@ -45,7 +45,7 @@ private:
     Binding* parent_binding;
 
     // Queue for BFS. Pointers point to the states in visited
-    std::queue<const MSSearchState*> open;
+    std::queue<std::pair<const MSSearchState*, uint64_t>> open;
 
     // Iterator for current node expansion
     std::unique_ptr<EdgeIter> iter;
@@ -96,7 +96,7 @@ public:
     void print(std::ostream& os, int indent, bool stats) const override;
 
     // Expand neighbors from current state
-    bool expand_neighbors(const MSSearchState& current_state);
+    bool expand_neighbors(const MSSearchState& current_state, uint64_t distance);
 
     void assign_nulls() override
     {

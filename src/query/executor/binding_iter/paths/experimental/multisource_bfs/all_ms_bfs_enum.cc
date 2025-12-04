@@ -19,8 +19,9 @@ template<bool MULTIPLE_FINAL>
 void BFSMultiSource<MULTIPLE_FINAL>::_reset()
 {
     // Empty open and visited
-    std::queue<const MSSearchState*> empty;
-    open.swap(empty);
+    while (!open.empty()) {
+        open.pop();
+    }
 
     lhs->reset();
     lhs_at_end = false;
@@ -45,7 +46,7 @@ void BFSMultiSource<MULTIPLE_FINAL>::fill_next_lhs_batch()
         if (!start_node.is_null()) {
             auto state_inserted = visited.emplace(automaton.start_state, start_node).first.operator->();
             start_batch.push_back(start_node);
-            open.push(state_inserted);
+            open.push({ state_inserted, 0 });
 
             state_inserted->init_previous(i);
 
@@ -98,14 +99,13 @@ next_begin:
     }
 
     while (open.size() > 0) {
-        auto current_state = open.front();
+        auto&& [current_state, distance] = open.front();
 
-        if (expand_neighbors(*current_state)) {
+        if (expand_neighbors(*current_state, distance)) {
             // Enumerate reached solutions
             goto next_begin;
         } else {
             // Pop and visit next state
-            current_state->in_queue = false;
             open.pop();
         }
     }
@@ -118,7 +118,7 @@ next_begin:
 }
 
 template<bool MULTIPLE_FINAL>
-bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MSSearchState& current_state)
+bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MSSearchState& current_state, uint64_t current_distance)
 {
     // Check if this is the first time that current_state is explored
     if (iter->at_end()) {
@@ -144,16 +144,22 @@ bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MSSearchState& curre
 
             // If next state was visited for the first time
             if (visited_state.second) {
-                open.push(reached_state);
+                open.push({ reached_state, current_distance + 1 });
 
                 // iterate over the starting nodes that reached the previous state
                 for (auto&& [start_idx, prev_info] : current_state.start2previous) {
+                    if (prev_info.distance != current_distance) {
+                        continue;
+                    }
                     Transition path_transition(&current_state, transition.type_id, transition.inverse);
                     reached_state->add_new_previous(start_idx, path_transition, prev_info.distance + 1);
                 }
 
                 if (automaton.is_final_state[reached_state->automaton_state]) {
-                    for (auto&& [start_idx, _] : current_state.start2previous) {
+                    for (auto&& [start_idx, prev_info] : current_state.start2previous) {
+                        if (prev_info.distance != current_distance) {
+                            continue;
+                        }
                         ready_solutions.emplace_back(start_idx, reached_state);
                     }
                     return true;
@@ -162,7 +168,12 @@ bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MSSearchState& curre
                 std::set<int> new_starts;
 
                 for (auto&& [start_idx, prev_info] : current_state.start2previous) {
-                    if (auto it = reached_state->start2previous.find(start_idx); it != reached_state->start2previous.end()) {
+                    if (prev_info.distance != current_distance) {
+                        continue;
+                    }
+                    if (auto it = reached_state->start2previous.find(start_idx);
+                        it != reached_state->start2previous.end())
+                    {
                         if (prev_info.distance + 1 == it->second.distance) {
                             Transition path_transition(
                                 &current_state,
@@ -183,9 +194,8 @@ bool BFSMultiSource<MULTIPLE_FINAL>::expand_neighbors(const MSSearchState& curre
                 }
 
                 // add to open if there are new paths that reach this state
-                if (!new_starts.empty() && !reached_state->in_queue) {
-                    open.push(reached_state);
-                    reached_state->in_queue = true;
+                if (!new_starts.empty()) {
+                    open.push({ reached_state, current_distance + 1 });
                 }
 
                 // add the state as solution for each of the start indices
