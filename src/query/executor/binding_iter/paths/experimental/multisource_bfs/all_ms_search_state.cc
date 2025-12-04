@@ -4,7 +4,7 @@ using namespace Paths::AllShortest;
 
 bool Transition::operator==(const Transition& other) const
 {
-    return this->state->node_id == other.state->node_id && this->type_id == other.type_id
+    return this->state == other.state && this->type_id == other.type_id
         && this->inverse_direction == other.inverse_direction;
 }
 
