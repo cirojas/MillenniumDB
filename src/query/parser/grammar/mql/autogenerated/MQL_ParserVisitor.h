@@ -131,6 +131,8 @@ public:
 
     virtual std::any visitNode(MQL_Parser::NodeContext *context) = 0;
 
+    virtual std::any visitFixedNode(MQL_Parser::FixedNodeContext *context) = 0;
+
     virtual std::any visitFixedObj(MQL_Parser::FixedObjContext *context) = 0;
 
     virtual std::any visitVarNode(MQL_Parser::VarNodeContext *context) = 0;
@@ -210,8 +212,6 @@ public:
     virtual std::any visitLabels(MQL_Parser::LabelsContext *context) = 0;
 
     virtual std::any visitPropertiesFunction(MQL_Parser::PropertiesFunctionContext *context) = 0;
-
-    virtual std::any visitType(MQL_Parser::TypeContext *context) = 0;
 
     virtual std::any visitTextSearchIndexMode(MQL_Parser::TextSearchIndexModeContext *context) = 0;
 

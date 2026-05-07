@@ -1,11 +1,11 @@
 #pragma once
 
+#include "query/parser/op/sparql/op_visitor.h"
+#include "query/var_id.h"
+
 #include <memory>
 #include <ostream>
 #include <set>
-
-#include "query/parser/op/sparql/op_visitor.h"
-#include "query/query_context.h" // IWYU pragma: export
 
 namespace SPARQL {
 

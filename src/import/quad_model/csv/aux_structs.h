@@ -9,7 +9,6 @@ enum CSVType {
     ID,
     START_ID,
     END_ID,
-    TYPE,
     LABEL,
     STR,
     INT,

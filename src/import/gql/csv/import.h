@@ -194,9 +194,7 @@ private:
 
     void go_to_next_line();
 
-    uint64_t get_node_key_id(const std::string& column_name);
-
-    uint64_t get_edge_key_id(const std::string& column_name);
+    uint64_t get_property_key_id(const std::string& column_name);
 
     void move_to_next_column()
     {

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <vector>
-
 #include "query/parser/expr/sparql/expr.h"
 #include "query/parser/expr/sparql/expr_printer.h"
 #include "query/parser/op/sparql/op.h"
+
+#include <vector>
 
 namespace SPARQL {
 

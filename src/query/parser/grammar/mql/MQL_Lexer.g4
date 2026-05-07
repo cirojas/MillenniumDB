@@ -1,7 +1,7 @@
 lexer grammar MQL_Lexer;
 
 channels {
-    WS_CHANNEL
+	WS_CHANNEL
 }
 
 // KEYWORDS
@@ -88,9 +88,12 @@ FALSE_PROP: ':' 'false';
 ANON_ID: '_a' [0-9]+;
 EDGE_ID: '_e' [0-9]+;
 
+UUID: HEX8 '-' HEX4 '-' HEX4 '-' HEX4 '-' HEX12;
+HEX: ('0x' | '0X') HEX_DIGIT+;
+
 KEY: '.' [A-Za-z] [A-Za-z0-9_]*;
-TYPE: ':' [A-Za-z] [A-Za-z0-9_]*;
-TYPE_VAR: ':' '?' [A-Za-z] [A-Za-z0-9_]*;
+LABEL: ':' [A-Za-z] [A-Za-z0-9_]*;
+LABEL_VAR: ':' '?' [A-Za-z] [A-Za-z0-9_]*;
 VARIABLE: '?' [A-Za-z] [A-Za-z0-9_]*;
 
 STRING: '"' ( ~'"' | '\\"')* '"';
@@ -98,9 +101,9 @@ STRING: '"' ( ~'"' | '\\"')* '"';
 UNSIGNED_INTEGER: DIGIT+;
 UNSIGNED_FLOAT: DIGIT+ '.' DIGIT* | '.' DIGIT+;
 UNSIGNED_SCIENTIFIC_NOTATION:
-    DIGIT+ '.' DIGIT* EXPONENT
-    | '.' DIGIT+ EXPONENT
-    | DIGIT+ EXPONENT;
+	DIGIT+ '.' DIGIT* EXPONENT
+	| '.' DIGIT+ EXPONENT
+	| DIGIT+ EXPONENT;
 
 NAME: [A-Za-z] [A-Za-z0-9_]*;
 
@@ -132,7 +135,7 @@ COLON: ':';
 
 WHITE_SPACE: [ \t\r\n]+ -> channel(WS_CHANNEL);
 SINGLE_LINE_COMMENT:
-    '//' ~[\r\n]* (('\r'? '\n') | EOF) -> channel(HIDDEN);
+	'//' ~[\r\n]* (('\r'? '\n') | EOF) -> channel(HIDDEN);
 
 UNRECOGNIZED: .;
 
@@ -166,3 +169,8 @@ fragment W: [wW];
 fragment X: [xX];
 fragment Y: [yY];
 fragment Z: [zZ];
+
+fragment HEX_DIGIT: [0-9a-fA-F];
+fragment HEX4: HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT;
+fragment HEX8: HEX4 HEX4;
+fragment HEX12: HEX8 HEX4;

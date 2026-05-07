@@ -1,9 +1,10 @@
 #pragma once
 
-#include <memory>
-
 #include "query/parser/op/gql/op_visitor.h"
 #include "query/rewriter/gql/op/rewrite_rules/rewrite_rule.h"
+
+#include <memory>
+#include <vector>
 
 namespace GQL {
 

@@ -2,21 +2,22 @@
 
 #include "query/optimizer/plan/plan.h"
 
-class PropertyTypePlan : public Plan {
+class EdgePropertyPlan : public Plan {
 public:
-    PropertyTypePlan(VarId object, ObjectId key, VarId value, uint64_t types_bitmap);
+    EdgePropertyPlan(Id edge, Id key, Id value);
 
-    PropertyTypePlan(const PropertyTypePlan& other) :
-        object(other.object),
+    EdgePropertyPlan(const EdgePropertyPlan& other) :
+        edge(other.edge),
         key(other.key),
         value(other.value),
-        types_bitmap(other.types_bitmap),
-        object_assigned(other.object_assigned)
+        edge_assigned(other.edge_assigned),
+        key_assigned(other.key_assigned),
+        value_assigned(other.value_assigned)
     { }
 
     std::unique_ptr<Plan> clone() const override
     {
-        return std::make_unique<PropertyTypePlan>(*this);
+        return std::make_unique<EdgePropertyPlan>(*this);
     }
 
     int relation_size() const override
@@ -39,13 +40,13 @@ public:
     ) const override;
 
     void print(std::ostream& os, int indent) const override;
-    std::string printTypesFromBitmap(uint64_t types_bitmap) const;
 
 private:
-    VarId object;
-    ObjectId key;
-    VarId value;
-    uint64_t types_bitmap;
+    Id edge;
+    Id key;
+    Id value;
 
-    bool object_assigned;
+    bool edge_assigned;
+    bool key_assigned;
+    bool value_assigned;
 };

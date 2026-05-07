@@ -1,12 +1,13 @@
 #pragma once
 
+#include "query/parser/op/gql/op_visitor.h"
+#include "query/rewriter/gql/op/var_type.h"
+#include "query/var_id.h"
+
+#include <map>
 #include <memory>
 #include <ostream>
 #include <set>
-
-#include "query/parser/op/gql/op_visitor.h"
-#include "query/query_context.h" // IWYU pragma: export
-#include "query/rewriter/gql/op/var_type.h"
 
 namespace GQL {
 

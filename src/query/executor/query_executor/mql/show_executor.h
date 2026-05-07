@@ -1,8 +1,11 @@
 #pragma once
 
+#include "graph_models/object_id.h"
 #include "query/executor/query_executor/mql/return_type.h"
 #include "query/executor/query_executor/query_executor.h"
 #include "query/parser/op/mql/op_show.h"
+
+#include <vector>
 
 namespace MQL {
 

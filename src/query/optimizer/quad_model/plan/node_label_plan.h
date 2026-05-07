@@ -2,27 +2,25 @@
 
 #include "query/optimizer/plan/plan.h"
 
-class PropertyPlan : public Plan {
+class NodeLabelPlan : public Plan {
 public:
-    PropertyPlan(Id object, Id key, Id value);
+    NodeLabelPlan(Id node, Id label);
 
-    PropertyPlan(const PropertyPlan& other) :
-        object(other.object),
-        key(other.key),
-        value(other.value),
-        object_assigned(other.object_assigned),
-        key_assigned(other.key_assigned),
-        value_assigned(other.value_assigned)
+    NodeLabelPlan(const NodeLabelPlan& other) :
+        node(other.node),
+        label(other.label),
+        node_assigned(other.node_assigned),
+        label_assigned(other.label_assigned)
     { }
 
     std::unique_ptr<Plan> clone() const override
     {
-        return std::make_unique<PropertyPlan>(*this);
+        return std::make_unique<NodeLabelPlan>(*this);
     }
 
     int relation_size() const override
     {
-        return 3;
+        return 2;
     }
 
     double estimate_cost() const override;
@@ -42,11 +40,9 @@ public:
     void print(std::ostream& os, int indent) const override;
 
 private:
-    Id object;
-    Id key;
-    Id value;
+    Id node;
+    Id label;
 
-    bool object_assigned;
-    bool key_assigned;
-    bool value_assigned;
+    bool node_assigned;
+    bool label_assigned;
 };

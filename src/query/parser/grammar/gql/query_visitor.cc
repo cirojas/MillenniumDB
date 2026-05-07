@@ -887,7 +887,7 @@ std::any QueryVisitor::visitPropertyKeyValuePair(GQLParser::PropertyKeyValuePair
         current_expr = std::make_unique<ExprEquals>(
             std::make_unique<ExprProperty>(
                 *current_id,
-                Conversions::pack_node_property(key),
+                Conversions::pack_property(key),
                 property_var,
                 VarType::Node
             ),
@@ -898,7 +898,7 @@ std::any QueryVisitor::visitPropertyKeyValuePair(GQLParser::PropertyKeyValuePair
         current_expr = std::make_unique<ExprEquals>(
             std::make_unique<ExprProperty>(
                 *current_id,
-                Conversions::pack_edge_property(key),
+                Conversions::pack_property(key),
                 property_var,
                 VarType::Edge
             ),
@@ -1614,14 +1614,14 @@ std::any QueryVisitor::visitPropertyReference(GQLParser::PropertyReferenceContex
     if (singleton_types[var_id] == VarType::Node) {
         current_expr = std::make_unique<ExprProperty>(
             var_id,
-            Conversions::pack_node_property(property_name),
+            Conversions::pack_property(property_name),
             property_var,
             VarType::Node
         );
     } else {
         current_expr = std::make_unique<ExprProperty>(
             var_id,
-            Conversions::pack_edge_property(property_name),
+            Conversions::pack_property(property_name),
             property_var,
             VarType::Edge
         );
@@ -1680,14 +1680,14 @@ std::any QueryVisitor::visitGqlPropertyReference(GQLParser::GqlPropertyReference
     if (singleton_types[var_id] == VarType::Node) {
         current_expr = std::make_unique<ExprProperty>(
             var_id,
-            Conversions::pack_node_property(property_name),
+            Conversions::pack_property(property_name),
             property_var,
             VarType::Node
         );
     } else {
         current_expr = std::make_unique<ExprProperty>(
             var_id,
-            Conversions::pack_edge_property(property_name),
+            Conversions::pack_property(property_name),
             property_var,
             VarType::Edge
         );

@@ -60,7 +60,7 @@ public:
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
     {
         os << std::string(indent, ' ') << "OpBind(?";
-        os << get_query_ctx().get_var_name(var) << "=";
+        os << var << "=";
         ExprPrinter printer(os);
         expr->accept_visitor(printer);
         os << ")\n";

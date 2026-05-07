@@ -179,6 +179,7 @@ std::string Conversions::to_lexical_str(ObjectId oid)
     case ObjectSubType::Iri:
     case ObjectSubType::NotFound:
     case ObjectSubType::PGMetaData:
+        int TODO; // PGMetaData?
         break;
     }
     return "";
@@ -204,21 +205,11 @@ ObjectId Conversions::pack_edge_label(const std::string& label)
     return ObjectId::get_null();
 }
 
-ObjectId Conversions::pack_node_property(const std::string& property)
+ObjectId Conversions::pack_property(const std::string& property)
 {
-    if (gql_model.catalog.node_keys2id.count(property)) {
-        uint64_t label_id = gql_model.catalog.node_keys2id[property];
-        return ObjectId(label_id | ObjectId::MASK_NODE_KEY);
-    }
-
-    return ObjectId::get_null();
-}
-
-ObjectId Conversions::pack_edge_property(const std::string& property)
-{
-    if (gql_model.catalog.edge_keys2id.count(property)) {
-        uint64_t label_id = gql_model.catalog.edge_keys2id[property];
-        return ObjectId(label_id | ObjectId::MASK_EDGE_KEY);
+    if (gql_model.catalog.keys2id.count(property)) {
+        uint64_t label_id = gql_model.catalog.keys2id[property];
+        return ObjectId(label_id | ObjectId::MASK_PROPERTY_KEY);
     }
 
     return ObjectId::get_null();
@@ -261,12 +252,8 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
         os << gql_model.catalog.edge_labels_str[unmasked_id];
         break;
     }
-    case ObjectType::NodeKey: {
-        os << gql_model.catalog.node_keys_str[unmasked_id];
-        break;
-    }
-    case ObjectType::EdgeKey: {
-        os << gql_model.catalog.edge_keys_str[unmasked_id];
+    case ObjectType::PropertyKey: {
+        os << gql_model.catalog.keys_str[unmasked_id];
         break;
     }
     case ObjectType::ListExt:
@@ -389,6 +376,7 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
     case ObjectType::TensorDoubleExt:
     case ObjectType::TensorDoubleTmp:
     case ObjectType::NotFound:
+    case ObjectType::NamedNodeHexInl:
     case ObjectType::NamedNodeHexExt:
     case ObjectType::NamedNodeHexTmp:
     case ObjectType::NamedNodeUuidExt:

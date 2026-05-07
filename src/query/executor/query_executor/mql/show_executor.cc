@@ -1,6 +1,7 @@
 #include "show_executor.h"
 
 #include "graph_models/quad_model/quad_model.h"
+#include "query/query_context.h"
 #include "storage/index/text_search/text_index_manager.h"
 
 using namespace MQL;

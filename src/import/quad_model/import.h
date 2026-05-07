@@ -5,7 +5,6 @@
 #include "graph_models/inliner.h"
 #include "graph_models/quad_model/quad_catalog.h"
 #include "import/disk_vector.h"
-#include "import/exceptions.h"
 #include "import/external_helper.h"
 #include "import/quad_model/lexer/state.h"
 #include "import/quad_model/lexer/token.h"
@@ -15,32 +14,34 @@
 #include "storage/index/lists/list_encoder.h"
 
 #include <cctype>
+#include <charconv>
+#include <cstdlib>
 #include <functional>
 #include <iostream>
 
 #include <boost/unordered/unordered_flat_set.hpp>
+#include <boost/unordered/unordered_flat_map.hpp>
 
 namespace Import { namespace QuadModel {
 class OnDiskImport {
 public:
-    static constexpr char PENDING_DECLARED_NODES_FILENAME_PREFIX[] = "tmp_pending_declared_nodes";
-    static constexpr char PENDING_LABELS_FILENAME_PREFIX[] = "tmp_pending_labels";
-    static constexpr char PENDING_PROPERTIES_FILENAME_PREFIX[] = "tmp_pending_properties";
-    static constexpr char PENDING_EDGES_FILENAME_PREFIX[] = "tmp_pending_edges";
+    static constexpr char PENDING_NODES_PREFIX[] = "/tmp_pending_nodes";
+    static constexpr char PENDING_NODE_LABELS_PREFIX[] = "/tmp_pending_node_labels";
+    static constexpr char PENDING_NODE_PROPERTIES_PREFIX[] = "/tmp_pending_node_properties";
+    static constexpr char PENDING_EDGE_PROPERTIES_PREFIX[] = "/tmp_pending_edge_properties";
+    static constexpr char PENDING_EDGES_PREFIX[] = "/tmp_pending_edges";
 
     OnDiskImport(const std::string& db_folder, uint64_t strings_buffer_size, uint64_t tensors_buffer_size) :
         strings_buffer_size(strings_buffer_size),
         tensors_buffer_size(tensors_buffer_size),
         db_folder(db_folder),
         catalog(QuadCatalog("catalog.dat")),
-        declared_nodes(db_folder + "/tmp_declared_nodes"),
-        labels(db_folder + "/tmp_labels"),
-        properties(db_folder + "/tmp_properties"),
+        nodes(db_folder + "/tmp_nodes"),
+        node_labels(db_folder + "/tmp_node_labels"),
+        node_properties(db_folder + "/tmp_node_properties"),
+        edge_properties(db_folder + "/tmp_edge_properties"),
         edges(db_folder + "/tmp_edges"),
-        equal_from_to(db_folder + "/tmp_equal_from_to"),
-        equal_from_type(db_folder + "/tmp_equal_from_type"),
-        equal_to_type(db_folder + "/tmp_equal_to_type"),
-        equal_from_to_type(db_folder + "/tmp_equal_from_to_type")
+        equal_from_to(db_folder + "/tmp_equal_from_to")
     {
         state_transitions = new int[Token::TOTAL_TOKENS * State::TOTAL_STATES];
         create_automata();
@@ -75,14 +76,12 @@ private:
 
     uint64_t id1;
     uint64_t id2;
-    uint64_t type_id;
     uint64_t edge_id;
     uint64_t key_id;
     uint64_t value_id;
     uint64_t label_id;
     uint64_t edge_count = 0;
     uint64_t max_anon_seen = 0;
-    std::vector<uint64_t> ids_stack;
 
     // true: right, false: left
     bool direction;
@@ -90,19 +89,22 @@ private:
     std::string db_folder;
     QuadCatalog catalog;
 
-    std::unique_ptr<DiskVector<1>> pending_declared_nodes;
-    std::unique_ptr<DiskVector<2>> pending_labels;
-    std::unique_ptr<DiskVector<3>> pending_properties;
+    std::unique_ptr<DiskVector<1>> pending_nodes;
+    std::unique_ptr<DiskVector<2>> pending_node_labels;
+    std::unique_ptr<DiskVector<3>> pending_node_properties;
+    std::unique_ptr<DiskVector<3>> pending_edge_properties;
     std::unique_ptr<DiskVector<4>> pending_edges;
 
-    DiskVector<1> declared_nodes;
-    DiskVector<2> labels;
-    DiskVector<3> properties;
-    DiskVector<4> edges;
+    DiskVector<1> nodes;
+    DiskVector<2> node_labels;
+    DiskVector<3> node_properties;
+    DiskVector<3> edge_properties;
+    DiskVector<4> edges; // from, to, label, edge
     DiskVector<3> equal_from_to;
-    DiskVector<3> equal_from_type;
-    DiskVector<3> equal_to_type;
-    DiskVector<2> equal_from_to_type;
+
+    boost::unordered_flat_map<std::string, uint64_t> node_labels2id;
+    boost::unordered_flat_map<std::string, uint64_t> edge_labels2id;
+    boost::unordered_flat_map<std::string, uint64_t> keys2id;
 
     // manager writing bytes to disk in a buffered manner
     std::unique_ptr<ExternalHelper> ext_helper;
@@ -121,7 +123,6 @@ private:
 
     void save_first_id_identifier()
     {
-        ids_stack.clear();
         if (lexer.str_len < 8) {
             id1 = Inliner::inline_string(lexer.str) | ObjectId::MASK_NAMED_NODE_INL;
         } else {
@@ -131,7 +132,6 @@ private:
 
     void save_first_id_anon()
     {
-        ids_stack.clear();
         uint64_t unmasked_id;
         // ignore first 2 characters: '_a'
         auto [ptr, ec] = std::from_chars(lexer.str + 2, lexer.str + lexer.str_len, unmasked_id);
@@ -146,13 +146,12 @@ private:
 
     void save_first_id_string()
     {
-        ids_stack.clear();
         normalize_string_literal(lexer.str, &lexer.str_len);
 
         if (lexer.str_len < 8) {
-            id1 = Inliner::inline_string(lexer.str) | ObjectId::MASK_STR_INL;
+            id1 = Inliner::inline_string(lexer.str) | ObjectId::MASK_NAMED_NODE_INL;
         } else {
-            id1 = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_STR_EXT);
+            id1 = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_NAMED_NODE_EXT);
         }
     }
 
@@ -166,56 +165,109 @@ private:
         return Common::Conversions::pack_float(atof(c_str)).id;
     }
 
-    void save_first_id_int()
+    // Packs a "0x..."-style hex token into an ObjectId using ext_helper.
+    // Supports up to 510 hex digits (255 bytes). Values up to 7 bytes are inlined.
+    // Leading zero bytes are stripped so "0x0032" and "0x32" produce the same ObjectId.
+    uint64_t pack_hex_id()
     {
-        ids_stack.clear();
-        id1 = try_parse_int(lexer.str);
-    }
+        const char* hex = lexer.str + 2; // skip "0x" or "0X"
+        const size_t hex_len = lexer.str_len - 2;
 
-    void save_first_id_float()
-    {
-        ids_stack.clear();
-        id1 = try_parse_float(lexer.str);
-    }
-
-    void save_first_id_true()
-    {
-        ids_stack.clear();
-        id1 = ObjectId::MASK_BOOL | 0x01;
-    }
-
-    void save_first_id_false()
-    {
-        ids_stack.clear();
-        id1 = ObjectId::MASK_BOOL | 0x00;
-    }
-
-    void save_first_id_implicit()
-    {
-        if (ids_stack.size() == 0) {
-            throw ImportException(
-                "[line " + std::to_string(current_line) + "] can't use implicit edge on undefined object"
-            );
-        } else if (lexer.str_len < ids_stack.size()) {
-            id1 = ids_stack[lexer.str_len - 1];
-            ids_stack.resize(lexer.str_len);
-            ids_stack.push_back(edge_id);
-        } else if (lexer.str_len == ids_stack.size()) {
-            id1 = ids_stack[lexer.str_len - 1];
-            ids_stack.push_back(edge_id);
-        } else {
-            throw ImportException(
-                "[line " + std::to_string(current_line) + "] undefined level of implicit edge"
-            );
+        if (hex_len == 0 || hex_len > 510) {
+            parsing_errors++;
+            WARN("line ", current_line, ": invalid hex identifier ", lexer.str);
+            return ObjectId::NULL_ID;
         }
+
+        // Compress hex chars to binary bytes (up to 255 bytes)
+        char bytes[256];
+        size_t num_bytes = 0;
+
+        // If odd length, the first nibble forms a single partial byte
+        size_t i = 0;
+        if (hex_len % 2 == 1) {
+            char c = static_cast<char>(tolower(static_cast<unsigned char>(hex[0])));
+            bytes[num_bytes++] = static_cast<char>((c >= 'a') ? (c - 'a' + 10) : (c - '0'));
+            i = 1;
+        }
+        for (; i < hex_len; i += 2) {
+            char hi = static_cast<char>(tolower(static_cast<unsigned char>(hex[i])));
+            char lo = static_cast<char>(tolower(static_cast<unsigned char>(hex[i + 1])));
+            uint8_t hi_val = (hi >= 'a') ? (hi - 'a' + 10) : (hi - '0');
+            uint8_t lo_val = (lo >= 'a') ? (lo - 'a' + 10) : (lo - '0');
+            bytes[num_bytes++] = static_cast<char>((hi_val << 4) | lo_val);
+        }
+
+        // Strip leading zero bytes; keep at least one byte (for "0x0" → [0x00])
+        size_t start = 0;
+        while (start < num_bytes - 1 && bytes[start] == 0) {
+            start++;
+        }
+        const char* data = bytes + start;
+        num_bytes -= start;
+
+        // Fits in 7 bytes → inline as integer value
+        if (num_bytes <= 7) {
+            uint64_t value = 0;
+            for (size_t j = 0; j < num_bytes; j++) {
+                value = (value << 8) | static_cast<unsigned char>(data[j]);
+            }
+            return ObjectId::MASK_NAMED_NODE_HEX_INL | value;
+        }
+
+        return ext_helper->get_or_create_ext(data, num_bytes, ObjectId::MASK_NAMED_NODE_HEX_EXT);
+    }
+
+    // Packs a 36-char UUID token into 16 compressed bytes and stores externally.
+    uint64_t pack_uuid_id()
+    {
+        // Normalize to lowercase and compress 36 UUID chars to 16 bytes
+        char bytes[16];
+        int out_pos = 0;
+        int hex_idx = 0;
+        char pair[3] = { 0, 0, '\0' };
+        for (size_t i = 0; i < lexer.str_len; i++) {
+            char c = static_cast<char>(tolower(static_cast<unsigned char>(lexer.str[i])));
+            if (c == '-') {
+                continue;
+            }
+            pair[hex_idx % 2] = c;
+            if (hex_idx % 2 == 1) {
+                bytes[out_pos++] = static_cast<char>(
+                    static_cast<unsigned char>(strtol(pair, nullptr, 16))
+                );
+            }
+            hex_idx++;
+        }
+        return ext_helper->get_or_create_ext(bytes, 16, ObjectId::MASK_NAMED_NODE_UUID_EXT);
+    }
+
+    void save_first_id_hex()
+    {
+        id1 = pack_hex_id();
+    }
+
+    void save_second_id_hex()
+    {
+        id2 = pack_hex_id();
+    }
+
+    void save_first_id_uuid()
+    {
+        id1 = pack_uuid_id();
+    }
+
+    void save_second_id_uuid()
+    {
+        id2 = pack_uuid_id();
     }
 
     void try_save_declared_node()
     {
         if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
-            pending_declared_nodes->push_back({ id1 });
+            pending_nodes->push_back({ id1 });
         } else {
-            declared_nodes.push_back({ id1 });
+            nodes.push_back({ id1 });
         }
     }
 
@@ -223,81 +275,72 @@ private:
     template<bool is_right_direction>
     void try_save_quad()
     {
-        if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP || (id2 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
-            || (type_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+        if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP || (id2 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
         {
             if constexpr (is_right_direction) {
-                pending_edges->push_back({ id1, id2, type_id, edge_id });
+                pending_edges->push_back({ id1, id2, label_id, edge_id });
             } else {
-                pending_edges->push_back({ id2, id1, type_id, edge_id });
+                pending_edges->push_back({ id2, id1, label_id, edge_id });
             }
             return;
         }
 
         if constexpr (is_right_direction) {
-            edges.push_back({ id1, id2, type_id, edge_id });
+            edges.push_back({ id1, id2, label_id, edge_id });
         } else {
-            edges.push_back({ id2, id1, type_id, edge_id });
+            edges.push_back({ id2, id1, label_id, edge_id });
         }
 
         if (id1 == id2) {
-            equal_from_to.push_back({ id1, type_id, edge_id });
-
-            if (id1 == type_id) {
-                equal_from_to_type.push_back({ id1, edge_id });
-            }
-        }
-
-        if (id1 == type_id) {
-            if constexpr (is_right_direction) {
-                equal_from_type.push_back({ id1, id2, edge_id });
-            } else {
-                equal_to_type.push_back({ id1, id2, edge_id });
-            }
-        }
-
-        if (id2 == type_id) {
-            if constexpr (is_right_direction) {
-                equal_to_type.push_back({ id1, id2, edge_id });
-            } else {
-                equal_from_type.push_back({ id1, id2, edge_id });
-            }
+            equal_from_to.push_back({ id1, label_id, edge_id });
         }
     }
 
-    void try_save_label()
+    void try_save_node_label()
     {
-        if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
-            || (label_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+        if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
         {
-            pending_labels->push_back({ id1, label_id });
+            pending_node_labels->push_back({ id1, label_id });
         } else {
-            labels.push_back({ id1, label_id });
+            node_labels.push_back({ id1, label_id });
         }
     }
 
-    void try_save_property(uint64_t obj_id)
+    void try_save_node_property(uint64_t obj_id)
     {
         if ((obj_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
-            || (key_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
             || (value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
         {
-            pending_properties->push_back({ obj_id, key_id, value_id });
+            pending_node_properties->push_back({ obj_id, key_id, value_id });
         } else {
-            properties.push_back({ obj_id, key_id, value_id });
+            node_properties.push_back({ obj_id, key_id, value_id });
         }
     }
 
-    void save_edge_type()
+    void try_save_edge_property(uint64_t obj_id)
     {
-        if (lexer.str_len < 8) {
-            type_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_NAMED_NODE_INL;
+        if ((obj_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
+            || (value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+        {
+            pending_edge_properties->push_back({ obj_id, key_id, value_id });
         } else {
-            type_id = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_NAMED_NODE_EXT);
+            edge_properties.push_back({ obj_id, key_id, value_id });
+        }
+    }
+
+    void save_edge_label()
+    {
+        std::string label(lexer.str, lexer.str_len);
+        auto it = edge_labels2id.find(label);
+        if (it != edge_labels2id.end()) {
+            label_id = it->second | ObjectId::MASK_EDGE_LABEL;
+        } else {
+            auto new_id = edge_labels2id.size();
+            edge_labels2id.insert({label, new_id});
+            label_id = new_id | ObjectId::MASK_EDGE_LABEL;
         }
 
         edge_id = edge_count++ | ObjectId::MASK_DIRECTED_EDGE;
-        ids_stack.push_back(edge_id);
 
         if (direction) {
             try_save_quad<true>();
@@ -306,12 +349,16 @@ private:
         }
     }
 
-    void save_prop_key()
+    void save_property_key()
     {
-        if (lexer.str_len < 8) {
-            key_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STR_INL;
+        std::string key(lexer.str, lexer.str_len);
+        auto it = keys2id.find(key);
+        if (it != keys2id.end()) {
+            key_id = it->second | ObjectId::MASK_PROPERTY_KEY;
         } else {
-            key_id = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_STR_EXT);
+            auto new_id = keys2id.size();
+            keys2id.insert({key, new_id});
+            key_id = new_id | ObjectId::MASK_PROPERTY_KEY;
         }
     }
 
@@ -343,53 +390,37 @@ private:
         normalize_string_literal(lexer.str, &lexer.str_len);
 
         if (lexer.str_len < 8) {
-            id2 = Inliner::inline_string(lexer.str) | ObjectId::MASK_STR_INL;
+            id2 = Inliner::inline_string(lexer.str) | ObjectId::MASK_NAMED_NODE_INL;
         } else {
-            id2 = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_STR_EXT);
+            id2 = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_NAMED_NODE_EXT);
         }
-    }
-
-    void save_second_id_int()
-    {
-        id2 = try_parse_int(lexer.str);
-    }
-
-    void save_second_id_float()
-    {
-        id2 = try_parse_float(lexer.str);
-    }
-
-    void save_second_id_true()
-    {
-        id2 = ObjectId::MASK_BOOL | 0x01;
-    }
-
-    void save_second_id_false()
-    {
-        id2 = ObjectId::MASK_BOOL | 0x00;
     }
 
     void add_node_label()
     {
-        if (lexer.str_len < 8) {
-            label_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STR_INL;
+        std::string label(lexer.str, lexer.str_len);
+        auto it = node_labels2id.find(label);
+        if (it != node_labels2id.end()) {
+            label_id = it->second | ObjectId::MASK_NODE_LABEL;
         } else {
-            label_id = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_STR_EXT);
+            auto new_id = node_labels2id.size();
+            node_labels2id.insert({label, new_id});
+            label_id = new_id | ObjectId::MASK_NODE_LABEL;
         }
 
-        try_save_label();
+        try_save_node_label();
     }
 
     void add_node_prop_datatype()
     {
         parse_prop_datatype(lexer.str, lexer.str_len);
-        try_save_property(id1);
+        try_save_node_property(id1);
     }
 
     void add_edge_prop_datatype()
     {
         parse_prop_datatype(lexer.str, lexer.str_len);
-        try_save_property(edge_id);
+        try_save_edge_property(edge_id);
     }
 
     // parse datatype and store it in value_id
@@ -490,31 +521,31 @@ private:
             value_id = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_STR_EXT);
         }
 
-        try_save_property(id1);
+        try_save_node_property(id1);
     }
 
     void add_node_prop_int()
     {
         value_id = try_parse_int(lexer.str);
-        try_save_property(id1);
+        try_save_node_property(id1);
     }
 
     void add_node_prop_float()
     {
         value_id = try_parse_float(lexer.str);
-        try_save_property(id1);
+        try_save_node_property(id1);
     }
 
     void add_node_prop_true()
     {
         value_id = ObjectId::MASK_BOOL | 0x01;
-        try_save_property(id1);
+        try_save_node_property(id1);
     }
 
     void add_node_prop_false()
     {
         value_id = ObjectId::MASK_BOOL | 0x00;
-        try_save_property(id1);
+        try_save_node_property(id1);
     }
 
     void add_edge_prop_string()
@@ -527,31 +558,31 @@ private:
             value_id = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_STR_EXT);
         }
 
-        try_save_property(edge_id);
+        try_save_edge_property(edge_id);
     }
 
     void add_edge_prop_int()
     {
         value_id = try_parse_int(lexer.str);
-        try_save_property(edge_id);
+        try_save_edge_property(edge_id);
     }
 
     void add_edge_prop_float()
     {
         value_id = try_parse_float(lexer.str);
-        try_save_property(edge_id);
+        try_save_edge_property(edge_id);
     }
 
     void add_edge_prop_true()
     {
         value_id = ObjectId::MASK_BOOL | 0x01;
-        try_save_property(edge_id);
+        try_save_edge_property(edge_id);
     }
 
     void add_edge_prop_false()
     {
         value_id = ObjectId::MASK_BOOL | 0x00;
-        try_save_property(edge_id);
+        try_save_edge_property(edge_id);
     }
 
     void init_list()
@@ -621,9 +652,9 @@ private:
         if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
             || (list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
         {
-            pending_properties->push_back({ id1, key_id, list_id });
+            pending_node_properties->push_back({ id1, key_id, list_id });
         } else {
-            properties.push_back({ id1, key_id, list_id });
+            node_properties.push_back({ id1, key_id, list_id });
         }
     }
 
@@ -645,9 +676,9 @@ private:
         if ((edge_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
             || (list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
         {
-            pending_properties->push_back({ edge_id, key_id, list_id });
+            pending_edge_properties->push_back({ edge_id, key_id, list_id });
         } else {
-            properties.push_back({ edge_id, key_id, list_id });
+            edge_properties.push_back({ edge_id, key_id, list_id });
         }
     }
 
@@ -658,7 +689,6 @@ private:
 
     void finish_node_line()
     {
-        ids_stack.push_back(id1);
         current_line++;
 
         try_save_declared_node();

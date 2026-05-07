@@ -239,6 +239,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitFixedNode(MQL_Parser::FixedNodeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitFixedObj(MQL_Parser::FixedObjContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -396,10 +400,6 @@ public:
   }
 
   virtual std::any visitPropertiesFunction(MQL_Parser::PropertiesFunctionContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitType(MQL_Parser::TypeContext *ctx) override {
     return visitChildren(ctx);
   }
 

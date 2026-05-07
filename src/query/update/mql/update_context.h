@@ -36,8 +36,8 @@ public:
 
     boost::unordered_flat_map<uint64_t, int64_t> type2equal_from_to_type_count;
     boost::unordered_flat_map<uint64_t, int64_t> type2equal_from_to_count;
-    boost::unordered_flat_map<uint64_t, int64_t> type2equal_from_type_count;
-    boost::unordered_flat_map<uint64_t, int64_t> type2equal_to_type_count;
+    boost::unordered_flat_map<uint64_t, int64_t> type2equal_from_label_count;
+    boost::unordered_flat_map<uint64_t, int64_t> type2equal_to_label_count;
 
     std::map<uint64_t, std::vector<std::string>> indexed_keys;
 
@@ -62,7 +62,7 @@ public:
         }
     }
 
-    void insert_label(uint64_t node, uint64_t label)
+    void insert_node_label(uint64_t node, uint64_t label)
     {
         if (quad_model.label_node->insert({ label, node })) {
             quad_model.node_label->insert({ node, label });
@@ -72,18 +72,32 @@ public:
         }
     }
 
-    void insert_property(uint64_t obj, uint64_t key, uint64_t val)
+    uint64_t get_edge_label_id(const std::string&);
+    uint64_t get_node_label_id(const std::string&);
+    uint64_t get_key_id(const std::string&);
+
+    // void insert_property(uint64_t obj, uint64_t key, uint64_t val)
+    // {
+    //     if (ObjectId(obj).type() == ObjectType::DirectedEdge) {
+    //         insert_edge_property(obj, key, val);
+    //     } else {
+    //         // TODO: validate is node?
+    //         insert_node_property(obj, key, val);
+    //     }
+    // }
+
+    void insert_node_property(uint64_t node, uint64_t key, uint64_t val)
     {
         bool interruption = false;
 
         // Check if the node has a property with the same key
-        Record<3> min_range = { obj, key, 0 };
-        Record<3> max_range = { obj, key, UINT64_MAX };
-        auto prop_iter = quad_model.object_key_value->get_range(&interruption, min_range, max_range);
+        Record<3> min_range = { node, key, 0 };
+        Record<3> max_range = { node, key, UINT64_MAX };
+        auto prop_iter = quad_model.node_key_value->get_range(&interruption, min_range, max_range);
         const auto existing_record = prop_iter.next();
 
         if (existing_record != nullptr) {
-            auto old_obj = (*existing_record)[0];
+            auto old_node = (*existing_record)[0];
             auto old_key = (*existing_record)[1];
             auto old_val = (*existing_record)[2];
 
@@ -94,134 +108,131 @@ public:
             }
 
             // Overwrite the old value
-            quad_model.object_key_value->delete_record(*existing_record);
-            quad_model.key_value_object->delete_record(*existing_record);
-            quad_model.object_key_value->insert({ obj, key, val });
-            quad_model.key_value_object->insert({ key, val, obj });
+            quad_model.node_key_value->delete_record(*existing_record);
+            quad_model.key_value_node->delete_record(*existing_record);
+            quad_model.node_key_value->insert({ node, key, val });
+            quad_model.key_value_node->insert({ key, val, node });
 
             overwritten_properties++;
 
-            process_deleted_property(old_obj, old_key, old_val);
-            process_new_property(obj, key, val);
+            process_deleted_property(old_node, old_key, old_val);
+            process_new_property(node, key, val);
         } else {
             // The node does not have a property with the same key, create a new one
-            quad_model.object_key_value->insert({ obj, key, val });
-            quad_model.key_value_object->insert({ key, val, obj });
+            quad_model.node_key_value->insert({ node, key, val });
+            quad_model.key_value_node->insert({ key, val, node });
 
-            process_new_property(obj, key, val);
+            process_new_property(node, key, val);
             key2total_count[key]++;
             new_properties++;
         }
     }
 
-    void insert_edge(uint64_t from, uint64_t to, uint64_t type, uint64_t edge)
+    void insert_edge_property(uint64_t edge, uint64_t key, uint64_t val)
     {
-        // edge is always new
-        quad_model.from_to_type_edge->insert({ from, to, type, edge });
-        quad_model.to_type_from_edge->insert({ to, type, from, edge });
-        quad_model.type_from_to_edge->insert({ type, from, to, edge });
-        quad_model.type_to_from_edge->insert({ type, to, from, edge });
-        quad_model.edge_from_to_type->insert({ edge, from, to, type });
+        bool interruption = false;
 
-        new_edges++;
-        type2total_count[type]++;
+        // Check if the node has a property with the same key
+        Record<3> min_range = { edge, key, 0 };
+        Record<3> max_range = { edge, key, UINT64_MAX };
+        auto prop_iter = quad_model.edge_key_value->get_range(&interruption, min_range, max_range);
+        const auto existing_record = prop_iter.next();
 
-        if (from == to) {
-            quad_model.equal_from_to->insert({ from, type, edge });
-            quad_model.equal_from_to_inverted->insert({ type, from, edge });
-            type2equal_from_to_count[type]++;
+        if (existing_record != nullptr) {
+            auto old_edge = (*existing_record)[0];
+            auto old_key = (*existing_record)[1];
+            auto old_val = (*existing_record)[2];
 
-            if (from == type) {
-                quad_model.equal_from_to_type->insert({ from, edge });
-                type2equal_from_to_type_count[type]++;
+            // The node has a property with the same key
+            if (val == old_val) {
+                // The exact same record, nothing to do
+                return;
             }
-        }
-        if (from == type) {
-            quad_model.equal_from_type->insert({ from, to, edge });
-            quad_model.equal_from_type_inverted->insert({ to, from, edge });
-            type2equal_from_type_count[type]++;
-        }
-        if (to == type) {
-            quad_model.equal_to_type->insert({ to, from, edge });
-            quad_model.equal_to_type_inverted->insert({ from, to, edge });
-            type2equal_to_type_count[type]++;
+
+            // Overwrite the old value
+            quad_model.edge_key_value->delete_record(*existing_record);
+            quad_model.key_value_edge->delete_record(*existing_record);
+            quad_model.edge_key_value->insert({ edge, key, val });
+            quad_model.key_value_edge->insert({ key, val, edge });
+
+            overwritten_properties++;
+
+            process_deleted_property(old_edge, old_key, old_val);
+            process_new_property(edge, key, val);
+        } else {
+            // The node does not have a property with the same key, create a new one
+            quad_model.edge_key_value->insert({ edge, key, val });
+            quad_model.key_value_edge->insert({ key, val, edge });
+
+            process_new_property(edge, key, val);
+            key2total_count[key]++;
+            new_properties++;
         }
     }
 
-    void set_edge_type(uint64_t edge, uint64_t new_type)
+    void insert_edge(uint64_t from, uint64_t to, uint64_t label, uint64_t edge)
+    {
+        // edge is always new
+        quad_model.from_to_label_edge->insert({ from, to, label, edge });
+        quad_model.to_label_from_edge->insert({ to, label, from, edge });
+        quad_model.label_from_to_edge->insert({ label, from, to, edge });
+        quad_model.label_to_from_edge->insert({ label, to, from, edge });
+        quad_model.edge_from_to_label->insert({ edge, from, to, label });
+
+        new_edges++;
+        type2total_count[label]++;
+
+        if (from == to) {
+            quad_model.equal_from_to->insert({ from, label, edge });
+            quad_model.equal_from_to_inv->insert({ label, from, edge });
+            type2equal_from_to_count[label]++;
+        }
+    }
+
+    void set_edge_label(uint64_t edge, uint64_t new_label)
     {
         bool interruption = false;
 
         // Check if the node has a property with the same key
         Record<4> min_range = { edge, 0, 0, 0 };
         Record<4> max_range = { edge, UINT64_MAX, UINT64_MAX, UINT64_MAX };
-        auto iter = quad_model.edge_from_to_type->get_range(&interruption, min_range, max_range);
+        auto iter = quad_model.edge_from_to_label->get_range(&interruption, min_range, max_range);
 
         if (auto existing_record = iter.next()) {
             auto from = (*existing_record)[1];
             auto to = (*existing_record)[2];
             auto old_type = (*existing_record)[3];
 
-            if (old_type == new_type) {
+            if (old_type == new_label) {
                 return;
             }
 
-            quad_model.edge_from_to_type->delete_record({ edge, from, to, old_type });
-            quad_model.from_to_type_edge->delete_record({ from, to, old_type, edge });
-            quad_model.to_type_from_edge->delete_record({ to, old_type, from, edge });
-            quad_model.type_from_to_edge->delete_record({ old_type, from, to, edge });
-            quad_model.type_to_from_edge->delete_record({ old_type, to, from, edge });
+            quad_model.edge_from_to_label->delete_record({ edge, from, to, old_type });
+            quad_model.from_to_label_edge->delete_record({ from, to, old_type, edge });
+            quad_model.to_label_from_edge->delete_record({ to, old_type, from, edge });
+            quad_model.label_from_to_edge->delete_record({ old_type, from, to, edge });
+            quad_model.label_to_from_edge->delete_record({ old_type, to, from, edge });
 
-            quad_model.edge_from_to_type->insert({ edge, from, to, new_type });
-            quad_model.from_to_type_edge->insert({ from, to, new_type, edge });
-            quad_model.to_type_from_edge->insert({ to, new_type, from, edge });
-            quad_model.type_from_to_edge->insert({ new_type, from, to, edge });
-            quad_model.type_to_from_edge->insert({ new_type, to, from, edge });
+            quad_model.edge_from_to_label->insert({ edge, from, to, new_label });
+            quad_model.from_to_label_edge->insert({ from, to, new_label, edge });
+            quad_model.to_label_from_edge->insert({ to, new_label, from, edge });
+            quad_model.label_from_to_edge->insert({ new_label, from, to, edge });
+            quad_model.label_to_from_edge->insert({ new_label, to, from, edge });
 
             overwritten_edges++;
 
             // delete equal cases
             if (from == to) {
                 quad_model.equal_from_to->delete_record({ from, old_type, edge });
-                quad_model.equal_from_to_inverted->delete_record({ old_type, from, edge });
+                quad_model.equal_from_to_inv->delete_record({ old_type, from, edge });
                 type2equal_from_to_count[old_type]--;
-
-                if (from == old_type) {
-                    quad_model.equal_from_to_type->delete_record({ from, edge });
-                    type2equal_from_to_type_count[old_type]--;
-                }
-            }
-            if (from == old_type) {
-                quad_model.equal_from_type->delete_record({ from, to, edge });
-                quad_model.equal_from_type_inverted->delete_record({ to, from, edge });
-                type2equal_from_type_count[old_type]--;
-            }
-            if (to == old_type) {
-                quad_model.equal_to_type->delete_record({ to, from, edge });
-                quad_model.equal_to_type_inverted->delete_record({ from, to, edge });
-                type2equal_to_type_count[old_type]--;
             }
 
             // insert equal cases
             if (from == to) {
-                quad_model.equal_from_to->insert({ from, new_type, edge });
-                quad_model.equal_from_to_inverted->insert({ new_type, from, edge });
-                type2equal_from_to_count[new_type]++;
-
-                if (from == new_type) {
-                    quad_model.equal_from_to_type->insert({ from, edge });
-                    type2equal_from_to_type_count[new_type]++;
-                }
-            }
-            if (from == new_type) {
-                quad_model.equal_from_type->insert({ from, to, edge });
-                quad_model.equal_from_type_inverted->insert({ to, from, edge });
-                type2equal_from_type_count[new_type]++;
-            }
-            if (to == new_type) {
-                quad_model.equal_to_type->insert({ to, from, edge });
-                quad_model.equal_to_type_inverted->insert({ from, to, edge });
-                type2equal_to_type_count[new_type]++;
+                quad_model.equal_from_to->insert({ from, new_label, edge });
+                quad_model.equal_from_to_inv->insert({ new_label, from, edge });
+                type2equal_from_to_count[new_label]++;
             }
         }
     }
@@ -236,89 +247,96 @@ public:
         return ObjectId(ObjectId::MASK_ANON_INL | current_edge++);
     }
 
-    void delete_object(uint64_t obj, bool detach)
+    void delete_edge(uint64_t edge)
     {
         bool interruption = false;
 
-        const Record<4> min_range = { obj, 0, 0, 0 };
-        const Record<4> max_range = { obj, UINT64_MAX, UINT64_MAX, UINT64_MAX };
+        const Record<4> min_range = { edge, 0, 0, 0 };
+        const Record<4> max_range = { edge, UINT64_MAX, UINT64_MAX, UINT64_MAX };
+
+        auto iter = quad_model.edge_from_to_label->get_range(&interruption, min_range, max_range);
+
+        if (auto existing_record = iter.next()) {
+            deleted_edges++;
+
+            auto from = (*existing_record)[1];
+            auto to = (*existing_record)[2];
+            auto label = (*existing_record)[3];
+
+            quad_model.edge_from_to_label->delete_record({ edge, from, to, label });
+            quad_model.from_to_label_edge->delete_record({ from, to, label, edge });
+            quad_model.to_label_from_edge->delete_record({ to, label, from, edge });
+            quad_model.label_from_to_edge->delete_record({ label, from, to, edge });
+            quad_model.label_to_from_edge->delete_record({ label, to, from, edge });
+
+            // delete equal cases
+            if (from == to) {
+                quad_model.equal_from_to->delete_record({ from, label, edge });
+                quad_model.equal_from_to_inv->delete_record({ label, from, edge });
+                type2equal_from_to_count[label]--;
+            }
+        }
+
+        // save here to delete later, because delete while iterating is a bad idea
+        std::set<std::pair<uint64_t, uint64_t>> props_to_delete;
+
+        auto prop_iter = quad_model.edge_key_value
+                             ->get_range(&interruption, { edge, 0, 0 }, { edge, UINT64_MAX, UINT64_MAX });
+
+        for (auto record = prop_iter.next(); record != nullptr; record = prop_iter.next()) {
+            auto key = (*record)[1];
+            auto value = (*record)[2];
+
+            props_to_delete.emplace(key, value);
+        }
+
+        for (auto&& [k, v] : props_to_delete) {
+            quad_model.edge_key_value->delete_record({ edge, k, v });
+            quad_model.key_value_edge->delete_record({ k, v, edge });
+
+            process_deleted_property(edge, k, v); // TODO:
+            deleted_properties++;
+            key2total_count[k]--;
+        }
+    }
+
+    void delete_node(uint64_t node, bool detach)
+    {
+        bool interruption = false;
+
+        const Record<4> min_range = { node, 0, 0, 0 };
+        const Record<4> max_range = { node, UINT64_MAX, UINT64_MAX, UINT64_MAX };
         if (!detach) {
 
-            auto it1 = quad_model.from_to_type_edge->get_range(&interruption, min_range, max_range);
-            auto it2 = quad_model.to_type_from_edge->get_range(&interruption, min_range, max_range);
-            auto it3 = quad_model.type_from_to_edge->get_range(&interruption, min_range, max_range);
-            if (it1.next() != nullptr || it2.next() != nullptr || it3.next() != nullptr) {
+            auto it1 = quad_model.from_to_label_edge->get_range(&interruption, min_range, max_range);
+            if (it1.next() != nullptr) {
                 throw QueryException(
-                    "Trying to delete object with existing connections (use DETACH DELETE if intended)"
+                    "Trying to delete node with existing connections (use DETACH DELETE if intended)"
                 );
             }
         }
 
-        if (ObjectId(obj).type() == ObjectType::DirectedEdge) {
-            auto iter = quad_model.edge_from_to_type->get_range(&interruption, min_range, max_range);
-
-            if (auto existing_record = iter.next()) {
-                deleted_edges++;
-
-                auto from = (*existing_record)[1];
-                auto to = (*existing_record)[2];
-                auto type = (*existing_record)[3];
-
-                quad_model.edge_from_to_type->delete_record({ obj, from, to, type });
-                quad_model.from_to_type_edge->delete_record({ from, to, type, obj });
-                quad_model.to_type_from_edge->delete_record({ to, type, from, obj });
-                quad_model.type_from_to_edge->delete_record({ type, from, to, obj });
-                quad_model.type_to_from_edge->delete_record({ type, to, from, obj });
-
-                // delete equal cases
-                if (from == to) {
-                    quad_model.equal_from_to->delete_record({ from, type, obj });
-                    quad_model.equal_from_to_inverted->delete_record({ type, from, obj });
-                    type2equal_from_to_count[type]--;
-
-                    if (from == type) {
-                        quad_model.equal_from_to_type->delete_record({ from, obj });
-                        type2equal_from_to_type_count[type]--;
-                    }
-                }
-                if (from == type) {
-                    quad_model.equal_from_type->delete_record({ from, to, obj });
-                    quad_model.equal_from_type_inverted->delete_record({ to, from, obj });
-                    type2equal_from_type_count[type]--;
-                }
-                if (to == type) {
-                    quad_model.equal_to_type->delete_record({ to, from, obj });
-                    quad_model.equal_to_type_inverted->delete_record({ from, to, obj });
-                    type2equal_to_type_count[type]--;
-                }
-            }
-        } else {
-            if (quad_model.nodes->delete_record({ obj })) {
-                deleted_nodes++;
-            }
+        if (quad_model.nodes->delete_record({ node })) {
+            deleted_nodes++;
         }
 
         // save here to delete later, because delete while iterating is a bad idea
         std::set<uint64_t> edges_to_delete;
 
-        auto it1 = quad_model.from_to_type_edge->get_range(&interruption, min_range, max_range);
+        auto it1 = quad_model.from_to_label_edge->get_range(&interruption, min_range, max_range);
         for (auto record = it1.next(); record != nullptr; record = it1.next()) {
             edges_to_delete.insert((*record)[3]);
         }
-        auto it2 = quad_model.to_type_from_edge->get_range(&interruption, min_range, max_range);
+        auto it2 = quad_model.to_label_from_edge->get_range(&interruption, min_range, max_range);
         for (auto record = it2.next(); record != nullptr; record = it2.next()) {
-            edges_to_delete.insert((*record)[3]);
-        }
-        auto it3 = quad_model.type_from_to_edge->get_range(&interruption, min_range, max_range);
-        for (auto record = it3.next(); record != nullptr; record = it3.next()) {
             edges_to_delete.insert((*record)[3]);
         }
 
         // save here to delete later, because delete while iterating is a bad idea
         std::set<std::pair<uint64_t, uint64_t>> props_to_delete;
 
-        auto prop_iter = quad_model.object_key_value
-                             ->get_range(&interruption, { obj, 0, 0 }, { obj, UINT64_MAX, UINT64_MAX });
+        auto prop_iter = quad_model.node_key_value
+                             ->get_range(&interruption, { node, 0, 0 }, { node, UINT64_MAX, UINT64_MAX });
 
         for (auto record = prop_iter.next(); record != nullptr; record = prop_iter.next()) {
             auto key = (*record)[1];
@@ -328,14 +346,14 @@ public:
         }
 
         for (auto edge : edges_to_delete) {
-            delete_object(edge, true);
+            delete_edge(edge);
         }
 
         for (auto&& [k, v] : props_to_delete) {
-            quad_model.object_key_value->delete_record({ obj, k, v });
-            quad_model.key_value_object->delete_record({ k, v, obj });
+            quad_model.node_key_value->delete_record({ node, k, v });
+            quad_model.key_value_node->delete_record({ k, v, node });
 
-            process_deleted_property(obj, k, v);
+            process_deleted_property(node, k, v); // TODO:
             deleted_properties++;
             key2total_count[k]--;
         }
@@ -351,20 +369,39 @@ public:
         }
     }
 
-    void delete_property(uint64_t obj, uint64_t key)
+    void delete_node_property(uint64_t node, uint64_t key)
     {
         bool interruption = false;
-        Record<3> min_range = { obj, key, 0 };
-        Record<3> max_range = { obj, key, UINT64_MAX };
-        auto prop_iter = quad_model.object_key_value->get_range(&interruption, min_range, max_range);
+        Record<3> min_range = { node, key, 0 };
+        Record<3> max_range = { node, key, UINT64_MAX };
+        auto prop_iter = quad_model.node_key_value->get_range(&interruption, min_range, max_range);
 
         if (auto existing_record = prop_iter.next()) {
             auto value = (*existing_record)[2];
 
-            quad_model.object_key_value->delete_record({ obj, key, value });
-            quad_model.key_value_object->delete_record({ key, value, obj });
+            quad_model.node_key_value->delete_record({ node, key, value });
+            quad_model.key_value_node->delete_record({ key, value, node });
 
-            process_deleted_property(obj, key, value);
+            process_deleted_property(node, key, value);
+            deleted_properties++;
+            key2total_count[key]--;
+        }
+    }
+
+    void delete_edge_property(uint64_t edge, uint64_t key)
+    {
+        bool interruption = false;
+        Record<3> min_range = { edge, key, 0 };
+        Record<3> max_range = { edge, key, UINT64_MAX };
+        auto prop_iter = quad_model.edge_key_value->get_range(&interruption, min_range, max_range);
+
+        if (auto existing_record = prop_iter.next()) {
+            auto value = (*existing_record)[2];
+
+            quad_model.edge_key_value->delete_record({ edge, key, value });
+            quad_model.key_value_edge->delete_record({ key, value, edge });
+
+            process_deleted_property(edge, key, value);
             deleted_properties++;
             key2total_count[key]--;
         }

@@ -76,7 +76,8 @@ private:
     // Evaluate data checks for a specific node
     bool eval_data_check(
         uint64_t node,
-        std::vector<std::tuple<Operators, ObjectId, ObjectId>>& property_checks
+        std::vector<std::tuple<Operators, ObjectId, ObjectId>>& property_checks,
+        bool is_node // else is edge
     );
 
     // Obtain the next state to add to open (if it exists)

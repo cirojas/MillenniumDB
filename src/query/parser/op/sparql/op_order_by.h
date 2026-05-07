@@ -1,13 +1,13 @@
 #pragma once
 
-#include <cstddef>
-#include <variant>
-#include <vector>
-
 #include "query/parser/expr/sparql/atom/expr_var.h"
 #include "query/parser/expr/sparql/expr.h"
 #include "query/parser/expr/sparql/expr_printer.h"
 #include "query/parser/op/sparql/op.h"
+
+#include <cstddef>
+#include <variant>
+#include <vector>
 
 namespace SPARQL {
 

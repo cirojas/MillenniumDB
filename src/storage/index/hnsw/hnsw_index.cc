@@ -6,7 +6,6 @@
 #include "graph_models/quad_model/quad_model.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_model.h"
-#include "query/optimizer/quad_model/plan/property_plan.h"
 #include "query/optimizer/rdf_model/plan/triple_plan.h"
 #include "query/query_context.h"
 #include "storage/index/hnsw/hnsw_heap.h"
@@ -32,7 +31,7 @@ std::unique_ptr<HNSWIndex> HNSWIndex::create(
         throw std::runtime_error("Could not create directories: " + absolute_index_path);
     };
 
-    HNSWIndexParams params {};
+    HNSWIndexParams params {}; // TODO: init directly with values?
     params.entry_point_id = 0;
     params.dimensions = dimensions;
     params.layers = 1;
@@ -259,37 +258,37 @@ uint_fast32_t HNSWIndex::index_predicate(const std::string& predicate)
 
 uint_fast32_t HNSWIndex::index_property(const std::string& key)
 {
-    const auto object_var = get_query_ctx().get_internal_var();
-    const auto key_val = Common::Conversions::pack_string(key);
-    const auto value_var = get_query_ctx().get_internal_var();
+    // const auto object_var = get_query_ctx().get_internal_var();
+    // const auto key_val = Common::Conversions::pack_string(key);// TODO: mal
+    // const auto value_var = get_query_ctx().get_internal_var();
 
-    const auto property_plan = PropertyPlan(object_var, key_val, value_var);
+    // const auto property_plan = PropertyPlan(object_var, key_val, value_var);
 
-    auto property_plan_iter = property_plan.get_binding_iter();
+    // auto property_plan_iter = property_plan.get_binding_iter();
 
-    Binding binding(get_query_ctx().get_var_size());
-    property_plan_iter->begin(binding);
+    // Binding binding(get_query_ctx().get_var_size());
+    // property_plan_iter->begin(binding);
 
-    auto it = quad_model.catalog.key2total_count.find(key_val.id);
-    std::size_t num_expected_insertions = 0;
-    if (it != quad_model.catalog.key2total_count.end()) {
-        num_expected_insertions = it->second;
-    }
+    // auto it = quad_model.catalog.key2total_count.find(key_val.id);
+    // std::size_t num_expected_insertions = 0;
+    // if (it != quad_model.catalog.key2total_count.end()) {
+    //     num_expected_insertions = it->second;
+    // }
 
-    node_storage.reserve(num_expected_insertions);
-    node_neighbors_at_layer.reserve(num_expected_insertions);
+    // node_storage.reserve(num_expected_insertions);
+    // node_neighbors_at_layer.reserve(num_expected_insertions);
 
-    uint_fast32_t total_inserted_elements { 0 };
-    while (property_plan_iter->next()) {
-        const auto object_oid = binding[object_var];
-        const auto value_oid = binding[value_var];
+    // uint_fast32_t total_inserted_elements { 0 };
+    // while (property_plan_iter->next()) {
+    //     const auto object_oid = binding[object_var];
+    //     const auto value_oid = binding[value_var];
 
-        if (index_single<false>(object_oid, value_oid)) {
-            ++total_inserted_elements;
-        }
-    }
+    //     if (index_single<false>(object_oid, value_oid)) {
+    //         ++total_inserted_elements;
+    //     }
+    // }
 
-    return total_inserted_elements;
+    // return total_inserted_elements;
 }
 
 template<bool CheckTombstones>

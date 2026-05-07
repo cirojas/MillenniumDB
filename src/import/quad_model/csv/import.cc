@@ -21,14 +21,12 @@ OnDiskImport::OnDiskImport(
     tensors_buffer_size(tensors_buffer_size),
     db_folder(db_folder),
     catalog(QuadCatalog("catalog.dat")),
-    declared_nodes(db_folder + "/tmp_declared_nodes"),
-    labels(db_folder + "/tmp_labels"),
-    properties(db_folder + "/tmp_properties"),
-    edges(db_folder + "/tmp_edges"),
+    nodes(db_folder + "/tmp_nodes"),
+    node_labels(db_folder + "/tmp_node_labels"),
+    node_properties(db_folder + "/tmp_node_properties"),
+    edge_properties(db_folder + "/tmp_edge_properties"),
     equal_from_to(db_folder + "/tmp_equal_from_to"),
-    equal_from_type(db_folder + "/tmp_equal_from_type"),
-    equal_to_type(db_folder + "/tmp_equal_to_type"),
-    equal_from_to_type(db_folder + "tmp_equal_from_to_type")
+    edges(db_folder + "/tmp_edges")
 {
     state_transitions = new int[Token::TOTAL_TOKENS * State::TOTAL_STATES];
     list_buffer = new char[StringManager::MAX_STRING_SIZE];
@@ -51,21 +49,14 @@ void OnDiskImport::start_import(
     auto start = std::chrono::system_clock::now();
     auto import_start = start;
 
-    pending_declared_nodes = std::make_unique<DiskVector<1>>(
-        db_folder + "/" + PENDING_DECLARED_NODES_FILENAME_PREFIX
-    );
-    pending_labels = std::make_unique<DiskVector<2>>(db_folder + "/" + PENDING_LABELS_FILENAME_PREFIX);
-    pending_properties = std::make_unique<DiskVector<3>>(
-        db_folder + "/" + PENDING_PROPERTIES_FILENAME_PREFIX
-    );
-    pending_edges = std::make_unique<DiskVector<4>>(db_folder + "/" + PENDING_EDGES_FILENAME_PREFIX);
+    pending_nodes = std::make_unique<DiskVector<1>>(db_folder + PENDING_NODES_PREFIX);
+    pending_node_labels = std::make_unique<DiskVector<2>>(db_folder + PENDING_NODE_LABELS_PREFIX);
+    pending_node_properties = std::make_unique<DiskVector<3>>(db_folder + PENDING_NODE_PROPERTIES_PREFIX);
+    pending_edge_properties = std::make_unique<DiskVector<3>>(db_folder + PENDING_EDGE_PROPERTIES_PREFIX);
+    pending_edges = std::make_unique<DiskVector<4>>(db_folder + PENDING_EDGES_PREFIX);
 
     // Initialize external helper
     ext_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
-
-    // We save the headers first, so that the keys are never temporal
-    save_headers(in_nodes);
-    save_headers(in_edges);
 
     // First, import nodes to the database. After that, import relationships
     parse_node_files(in_nodes);
@@ -77,38 +68,44 @@ void OnDiskImport::start_import(
     ext_helper->flush_to_disk();
 
     { // process pending files
-        pending_declared_nodes->finish_appends();
-        pending_labels->finish_appends();
-        pending_properties->finish_appends();
+        pending_nodes->finish_appends();
+        pending_node_labels->finish_appends();
+        pending_node_properties->finish_appends();
+        pending_edge_properties->finish_appends();
         pending_edges->finish_appends();
 
         int i = 0;
         while (true) {
-            const auto total_pending = pending_declared_nodes->get_total_tuples()
-                                     + pending_labels->get_total_tuples()
-                                     + pending_properties->get_total_tuples()
+            const auto total_pending = pending_nodes->get_total_tuples()
+                                     + pending_node_labels->get_total_tuples()
+                                     + pending_node_properties->get_total_tuples()
+                                     + pending_edge_properties->get_total_tuples()
                                      + pending_edges->get_total_tuples();
             if (total_pending == 0) {
                 break;
             }
             std::cout << "total pending: " << total_pending << std::endl;
 
-            auto old_pending_declared_nodes = std::move(pending_declared_nodes);
-            auto old_pending_labels = std::move(pending_labels);
-            auto old_pending_properties = std::move(pending_properties);
+            auto old_pending_nodes = std::move(pending_nodes);
+            auto old_pending_node_labels = std::move(pending_node_labels);
+            auto old_pending_node_properties = std::move(pending_node_properties);
+            auto old_pending_edge_properties = std::move(pending_edge_properties);
             auto old_pending_edges = std::move(pending_edges);
 
-            pending_declared_nodes = std::make_unique<DiskVector<1>>(
-                db_folder + "/" + PENDING_DECLARED_NODES_FILENAME_PREFIX + std::to_string(i)
+            pending_nodes = std::make_unique<DiskVector<1>>(
+                db_folder + PENDING_NODES_PREFIX + std::to_string(i)
             );
-            pending_labels = std::make_unique<DiskVector<2>>(
-                db_folder + "/" + PENDING_LABELS_FILENAME_PREFIX + std::to_string(i)
+            pending_node_labels = std::make_unique<DiskVector<2>>(
+                db_folder + PENDING_NODE_LABELS_PREFIX + std::to_string(i)
             );
-            pending_properties = std::make_unique<DiskVector<3>>(
-                db_folder + "/" + PENDING_PROPERTIES_FILENAME_PREFIX + std::to_string(i)
+            pending_node_properties = std::make_unique<DiskVector<3>>(
+                db_folder + PENDING_NODE_PROPERTIES_PREFIX + std::to_string(i)
+            );
+            pending_edge_properties = std::make_unique<DiskVector<3>>(
+                db_folder + PENDING_EDGE_PROPERTIES_PREFIX + std::to_string(i)
             );
             pending_edges = std::make_unique<DiskVector<4>>(
-                db_folder + "/" + PENDING_EDGES_FILENAME_PREFIX + std::to_string(i)
+                db_folder + PENDING_EDGES_PREFIX + std::to_string(i)
             );
             ++i;
 
@@ -116,34 +113,41 @@ void OnDiskImport::start_import(
             ext_helper->advance_pending();
             ext_helper->clear_sets();
 
-            old_pending_declared_nodes->begin_tuple_iter();
-            while (old_pending_declared_nodes->has_next_tuple()) {
-                const auto& pending_tuple = old_pending_declared_nodes->next_tuple();
-
+            old_pending_nodes->begin_tuple_iter();
+            while (old_pending_nodes->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_nodes->next_tuple();
                 auto id1 = ext_helper->resolve_id(pending_tuple[0]);
-
                 try_save_declared_node(id1);
             }
 
-            old_pending_labels->begin_tuple_iter();
-            while (old_pending_labels->has_next_tuple()) {
-                const auto& pending_tuple = old_pending_labels->next_tuple();
-
+            old_pending_node_labels->begin_tuple_iter();
+            while (old_pending_node_labels->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_node_labels->next_tuple();
                 auto id1 = ext_helper->resolve_id(pending_tuple[0]);
-                auto label_id = ext_helper->resolve_id(pending_tuple[1]);
-
-                try_save_label(id1, label_id);
+                auto label_id = pending_tuple[1]; // always inlined
+                try_save_node_label(id1, label_id);
             }
 
-            old_pending_properties->begin_tuple_iter();
-            while (old_pending_properties->has_next_tuple()) {
-                const auto& pending_tuple = old_pending_properties->next_tuple();
+            old_pending_node_properties->begin_tuple_iter();
+            while (old_pending_node_properties->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_node_properties->next_tuple();
 
                 auto id1 = ext_helper->resolve_id(pending_tuple[0]);
-                auto key_id = pending_tuple[1];
+                auto key_id = pending_tuple[1]; // always inlined
                 auto value_id = ext_helper->resolve_id(pending_tuple[2]);
 
-                try_save_property(id1, key_id, value_id);
+                try_save_node_property(id1, key_id, value_id);
+            }
+
+            old_pending_edge_properties->begin_tuple_iter();
+            while (old_pending_edge_properties->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_edge_properties->next_tuple();
+
+                auto id1 = ext_helper->resolve_id(pending_tuple[0]);
+                auto key_id = pending_tuple[1]; // always inlined
+                auto value_id = ext_helper->resolve_id(pending_tuple[2]);
+
+                try_save_edge_property(id1, key_id, value_id);
             }
 
             old_pending_edges->begin_tuple_iter();
@@ -152,10 +156,10 @@ void OnDiskImport::start_import(
 
                 auto id1 = ext_helper->resolve_id(pending_tuple[0]);
                 auto id2 = ext_helper->resolve_id(pending_tuple[1]);
-                auto type_id = ext_helper->resolve_id(pending_tuple[2]);
+                auto label_id = pending_tuple[2]; // always inlined
                 auto edge_id = pending_tuple[3]; // always inlined
 
-                try_save_quad(id1, id2, type_id, edge_id);
+                try_save_quad(id1, id2, label_id, edge_id);
             }
 
             // write out new data
@@ -164,21 +168,24 @@ void OnDiskImport::start_import(
             ext_helper->clean_up_old();
 
             // close and delete old pending file
-            pending_declared_nodes->finish_appends();
-            pending_labels->finish_appends();
-            pending_properties->finish_appends();
+            pending_nodes->finish_appends();
+            pending_node_labels->finish_appends();
+            pending_node_properties->finish_appends();
+            pending_edge_properties->finish_appends();
             pending_edges->finish_appends();
 
-            old_pending_declared_nodes->skip_indexing(); // will close and remove file
-            old_pending_labels->skip_indexing(); // will close and remove file
-            old_pending_properties->skip_indexing(); // will close and remove file
+            old_pending_nodes->skip_indexing(); // will close and remove file
+            old_pending_node_labels->skip_indexing(); // will close and remove file
+            old_pending_node_properties->skip_indexing(); // will close and remove file
+            old_pending_edge_properties->skip_indexing(); // will close and remove file
             old_pending_edges->skip_indexing(); // will close and remove file
         }
 
         // process pending finished, clean up the last pending file
-        pending_declared_nodes->skip_indexing();
-        pending_labels->skip_indexing();
-        pending_properties->skip_indexing();
+        pending_nodes->skip_indexing();
+        pending_node_labels->skip_indexing();
+        pending_node_properties->skip_indexing();
+        pending_edge_properties->skip_indexing();
         pending_edges->skip_indexing();
     }
 
@@ -195,21 +202,19 @@ void OnDiskImport::start_import(
     char* const buffer = ext_helper->buffer;
     const auto buffer_size = ext_helper->buffer_size;
 
-    declared_nodes.finish_appends();
-    labels.finish_appends();
-    properties.finish_appends();
+    nodes.finish_appends();
+    node_labels.finish_appends();
+    node_properties.finish_appends();
+    edge_properties.finish_appends();
     edges.finish_appends();
     equal_from_to.finish_appends();
-    equal_from_type.finish_appends();
-    equal_to_type.finish_appends();
-    equal_from_to_type.finish_appends();
 
     { // Append undeclared nodes (being on an edge)
         std::unordered_set<uint64_t> nodes_set;
 
-        declared_nodes.begin_tuple_iter();
-        while (declared_nodes.has_next_tuple()) {
-            auto& tuple = declared_nodes.next_tuple();
+        nodes.begin_tuple_iter();
+        while (nodes.has_next_tuple()) {
+            auto& tuple = nodes.next_tuple();
             nodes_set.insert(tuple[0]);
         }
 
@@ -217,152 +222,126 @@ void OnDiskImport::start_import(
         while (edges.has_next_tuple()) {
             auto& tuple = edges.next_tuple();
             if (nodes_set.insert(tuple[0]).second) {
-                declared_nodes.push_back({ tuple[0] });
+                nodes.push_back({ tuple[0] });
             }
             if (nodes_set.insert(tuple[1]).second) {
-                declared_nodes.push_back({ tuple[1] });
-            }
-            if (nodes_set.insert(tuple[2]).second) {
-                declared_nodes.push_back({ tuple[2] });
+                nodes.push_back({ tuple[1] });
             }
         }
         // declared_nodes.finish_appends() its called twice, no problem with that
-        declared_nodes.finish_appends();
+        nodes.finish_appends();
         catalog.nodes_count = nodes_set.size();
         catalog.max_anon = current_anon_id;
     }
     print_duration("Write table", start);
 
-    declared_nodes.start_indexing(buffer, buffer_size, { 0 });
-    labels.start_indexing(buffer, buffer_size, { 0, 1 });
-    properties.start_indexing(buffer, buffer_size, { 0, 1, 2 });
+    nodes.start_indexing(buffer, buffer_size, { 0 });
+    node_labels.start_indexing(buffer, buffer_size, { 0, 1 });
+    node_properties.start_indexing(buffer, buffer_size, { 0, 1, 2 });
+    edge_properties.start_indexing(buffer, buffer_size, { 0, 1, 2 });
     edges.start_indexing(buffer, buffer_size, { 0, 1, 2, 3 });
-    equal_from_to_type.start_indexing(buffer, buffer_size, { 0, 1 });
     equal_from_to.start_indexing(buffer, buffer_size, { 0, 1, 2 });
-    equal_from_type.start_indexing(buffer, buffer_size, { 0, 1, 2 });
-    equal_to_type.start_indexing(buffer, buffer_size, { 0, 1, 2 });
 
     { // Nodes B+Tree
         size_t C_NODE = 0;
         NoStat<1> no_stat;
 
-        declared_nodes.create_bpt(db_folder + "/nodes", { C_NODE }, no_stat);
+        nodes.create_bpt(db_folder + "/nodes", { C_NODE }, no_stat);
     }
 
-    { // Labels B+Tree
+    { // Node Labels B+Tree
         size_t C_NODE = 0, C_LABEL = 1;
 
         NoStat<2> no_stat;
         DictCountStat<2> label_stat;
 
-        labels.create_bpt(db_folder + "/node_label", { C_NODE, C_LABEL }, no_stat);
+        node_labels.create_bpt(db_folder + "/node_label", { C_NODE, C_LABEL }, no_stat);
 
-        labels.create_bpt(db_folder + "/label_node", { C_LABEL, C_NODE }, label_stat);
-        catalog.label_count = label_stat.all;
+        node_labels.create_bpt(db_folder + "/label_node", { C_LABEL, C_NODE }, label_stat);
+        catalog.node_labels_count = label_stat.all;
         label_stat.end();
 
-        catalog.label2total_count = std::move(label_stat.dict);
+        catalog.node_label2total_count = std::move(label_stat.dict);
     }
 
-    { // Properties B+Tree
-        size_t C_OBJ = 0, C_KEY = 1, C_VALUE = 2;
+    { // Node Properties B+Tree
+        size_t C_NODE = 0, C_KEY = 1, C_VALUE = 2;
 
         NoStat<3> no_stat;
         PropStat prop_stat;
 
-        properties.create_bpt(db_folder + "/object_key_value", { C_OBJ, C_KEY, C_VALUE }, no_stat);
+        node_properties.create_bpt(db_folder + "/node_key_value", { C_NODE, C_KEY, C_VALUE }, no_stat);
 
-        properties.create_bpt(db_folder + "/key_value_object", { C_KEY, C_VALUE, C_OBJ }, prop_stat);
-        catalog.properties_count = prop_stat.all;
+        node_properties.create_bpt(db_folder + "/key_value_node", { C_KEY, C_VALUE, C_NODE }, prop_stat);
+        catalog.node_properties_count = prop_stat.all;
         prop_stat.end();
 
-        catalog.key2total_count = std::move(prop_stat.map_key_count);
+        catalog.node_key2total_count = std::move(prop_stat.map_key_count);
+    }
+
+    { // Edge Properties B+Tree
+        size_t C_EDGE = 0, C_KEY = 1, C_VALUE = 2;
+
+        NoStat<3> no_stat;
+        PropStat prop_stat;
+
+        node_properties.create_bpt(db_folder + "/edge_key_value", { C_EDGE, C_KEY, C_VALUE }, no_stat);
+
+        node_properties.create_bpt(db_folder + "/key_value_edge", { C_KEY, C_VALUE, C_EDGE }, prop_stat);
+        catalog.edge_properties_count = prop_stat.all;
+        prop_stat.end();
+
+        catalog.edge_key2total_count = std::move(prop_stat.map_key_count);
     }
 
     { // Quad B+Trees
-        size_t C_FROM = 0, C_TO = 1, C_TYPE = 2, C_EDGE = 3;
+        size_t C_FROM = 0, C_TO = 1, C_LABEL = 2, C_EDGE = 3;
 
         NoStat<4> no_stat;
         AllStat<4> all_stat;
-        DictCountStat<4> dict_count_stat;
+        DictCountStat<4> dict_count;
 
-        edges.create_bpt(db_folder + "/from_to_type_edge", { C_FROM, C_TO, C_TYPE, C_EDGE }, all_stat);
+        edges.create_bpt(db_folder + "/from_to_label_edge", { C_FROM, C_TO, C_LABEL, C_EDGE }, all_stat);
 
-        edges.create_bpt(db_folder + "/to_type_from_edge", { C_TO, C_TYPE, C_FROM, C_EDGE }, no_stat);
+        edges.create_bpt(db_folder + "/to_label_from_edge", { C_TO, C_LABEL, C_FROM, C_EDGE }, no_stat);
 
-        edges.create_bpt(db_folder + "/type_from_to_edge", { C_TYPE, C_FROM, C_TO, C_EDGE }, dict_count_stat);
+        edges.create_bpt(db_folder + "/label_from_to_edge", { C_LABEL, C_FROM, C_TO, C_EDGE }, dict_count);
 
-        edges.create_bpt(db_folder + "/type_to_from_edge", { C_TYPE, C_TO, C_FROM, C_EDGE }, no_stat);
+        edges.create_bpt(db_folder + "/label_to_from_edge", { C_LABEL, C_TO, C_FROM, C_EDGE }, no_stat);
 
-        edges.create_bpt(db_folder + "/edge_from_to_type", { C_EDGE, C_FROM, C_TO, C_TYPE }, no_stat);
+        edges.create_bpt(db_folder + "/edge_from_to_label", { C_EDGE, C_FROM, C_TO, C_LABEL }, no_stat);
 
         catalog.max_edge = all_stat.all;
-        catalog.type2total_count = std::move(dict_count_stat.dict);
+        catalog.edge_label2total_count = std::move(dict_count.dict);
     }
 
-    { // FROM=TO=TYPE EDGE
-        size_t C_FROM_TO_TYPE = 0, C_EDGE = 1;
-
-        DictCountStat<2> stat;
-        equal_from_to_type.create_bpt(db_folder + "/equal_from_to_type", { C_FROM_TO_TYPE, C_EDGE }, stat);
-        catalog.equal_from_to_type_count = stat.all;
-
-        stat.end();
-        catalog.type2equal_from_to_type_count = std::move(stat.dict);
-    }
-
-    { // FROM=TO TYPE EDGE
-        size_t C_FROM_TO = 0, C_TYPE = 1, C_EDGE = 2;
+    { // FROM=TO LABEL EDGE
+        size_t C_FROM_TO = 0, C_LABEL = 1, C_EDGE = 2;
 
         NoStat<3> no_stat;
-        equal_from_to.create_bpt(db_folder + "/equal_from_to", { C_FROM_TO, C_TYPE, C_EDGE }, no_stat);
+        equal_from_to.create_bpt(db_folder + "/equal_from_to", { C_FROM_TO, C_LABEL, C_EDGE }, no_stat);
 
         DictCountStat<3> stat;
-        equal_from_to.create_bpt(db_folder + "/equal_from_to_inverted", { C_TYPE, C_FROM_TO, C_EDGE }, stat);
+        equal_from_to.create_bpt(db_folder + "/equal_from_to_inverted", { C_LABEL, C_FROM_TO, C_EDGE }, stat);
         stat.end();
 
         catalog.equal_from_to_count = stat.all;
-        catalog.type2equal_from_to_count = std::move(stat.dict);
+        catalog.edge_label2equal_from_to_count = std::move(stat.dict);
     }
 
-    { // FROM=TYPE TO EDGE
-        size_t C_FROM_TYPE = 0, C_TO = 1, C_EDGE = 2;
-
-        DictCountStat<3> stat;
-        equal_from_type.create_bpt(db_folder + "/equal_from_type", { C_FROM_TYPE, C_TO, C_EDGE }, stat);
-        stat.end();
-        catalog.equal_from_type_count = stat.all;
-        catalog.type2equal_from_type_count = std::move(stat.dict);
-
-        NoStat<3> no_stat;
-        equal_from_type
-            .create_bpt(db_folder + "/equal_from_type_inverted", { C_TO, C_FROM_TYPE, C_EDGE }, no_stat);
-    }
-
-    { // TO=TYPE FROM EDGE
-        size_t C_TO_TYPE = 0, C_FROM = 1, C_EDGE = 2;
-
-        DictCountStat<3> stat;
-        equal_to_type.create_bpt(db_folder + "/equal_to_type", { C_TO_TYPE, C_FROM, C_EDGE }, stat);
-        stat.end();
-        catalog.equal_to_type_count = stat.all;
-        catalog.type2equal_to_type_count = std::move(stat.dict);
-
-        NoStat<3> no_stat;
-        equal_to_type
-            .create_bpt(db_folder + "/equal_to_type_inverted", { C_FROM, C_TO_TYPE, C_EDGE }, no_stat);
-    }
     // calling finish_indexing() closes and removes the file.
-    declared_nodes.finish_indexing();
-    properties.finish_indexing();
-    labels.finish_indexing();
+    nodes.finish_indexing();
+    node_labels.finish_indexing();
+    node_properties.finish_indexing();
+    edge_properties.finish_indexing();
     edges.finish_indexing();
-    equal_from_to_type.finish_indexing();
     equal_from_to.finish_indexing();
-    equal_from_type.finish_indexing();
-    equal_to_type.finish_indexing();
 
     print_duration("Write B+tree indexes", start);
+
+    catalog.node_labels2id = std::move(node_labels2id);
+    catalog.edge_labels2id = std::move(edge_labels2id);
+    catalog.keys2id = std::move(keys2id);
 
     catalog.print(std::cout);
 
@@ -400,31 +379,6 @@ std::vector<std::string> OnDiskImport::split(const std::string& input, const std
     tokens.push_back(input.substr(start));
 
     return tokens;
-}
-
-void OnDiskImport::save_headers(std::vector<std::unique_ptr<MDBIstreamFile>>& files)
-{
-    for (auto& in_file : files) {
-        lexer.begin(*in_file);
-
-        while (auto token = lexer.get_token()) {
-            if (token == Token::ENDLINE || token == Token::END_OF_FILE) {
-                break;
-            }
-            if (token != Token::STRING && token != Token::UNQUOTED_STRING) {
-                continue;
-            }
-
-            std::vector<std::string> split_col = split(lexer.str, ":");
-
-            for (auto str : split_col) {
-                if (str.size() >= 8) {
-                    ext_helper->get_or_create_ext(str.c_str(), str.size(), 0);
-                }
-            }
-        }
-        in_file->rewind();
-    }
 }
 
 void OnDiskImport::parse_node_files(std::vector<std::unique_ptr<MDBIstreamFile>>& in_nodes)
@@ -481,7 +435,7 @@ void OnDiskImport::reset_automata()
     current_group_to.clear();
     current_group_idx_from = 0;
     current_group_idx_to = 0;
-    column_with_type = 0;
+    column_with_edge_label = 0;
     column_with_id = 0;
 }
 
@@ -502,11 +456,9 @@ void OnDiskImport::save_header_column()
     if (current_state == State::START_BODY_NODES)
         current_line++;
 
-    CSVType new_column_type;
+    CSVType new_column_type = CSVType::UNDEFINED;
     std::vector<std::string> split_new_col = split(lexer.str, ":");
-    if (split_new_col.size() == 1)
-        new_column_type = CSVType::UNDEFINED;
-    else {
+    if (split_new_col.size() != 1) {
         if (split_new_col[1] == "ID") {
             new_column_type = CSVType::ID;
             if (split_new_col.size() == 3) {
@@ -521,6 +473,7 @@ void OnDiskImport::save_header_column()
                     current_group_idx = csvid_groups_index[split_new_col[2]];
                 }
             }
+            return;
         } else if (split_new_col[1] == "START_ID") {
             new_column_type = CSVType::START_ID;
             if (split_new_col.size() == 3) {
@@ -532,6 +485,7 @@ void OnDiskImport::save_header_column()
             } else {
                 current_group_idx_from = -1;
             }
+            return;
         } else if (split_new_col[1] == "END_ID") {
             new_column_type = CSVType::END_ID;
             if (split_new_col.size() == 3) {
@@ -543,10 +497,11 @@ void OnDiskImport::save_header_column()
             } else {
                 current_group_idx_to = -1;
             }
+            return;
+        } else if (split_new_col[1] == "LABEL") {
+            new_column_type = CSVType::LABEL;
+            return;
         }
-
-        else if (split_new_col[1] == "TYPE")
-            new_column_type = CSVType::TYPE;
 
         else if (split_new_col[1] == "STR")
             new_column_type = CSVType::STR;
@@ -554,27 +509,33 @@ void OnDiskImport::save_header_column()
             new_column_type = CSVType::INT;
         else if (split_new_col[1] == "FLOAT")
             new_column_type = CSVType::DECIMAL;
-        else if (split_new_col[1] == "LABEL")
-            new_column_type = CSVType::LABEL;
         else if (split_new_col[1] == "DATE")
             new_column_type = CSVType::DATE;
         else if (split_new_col[1] == "DATETIME")
             new_column_type = CSVType::DATETIME;
         else if (split_new_col[1] == "LIST")
             new_column_type = CSVType::LIST;
-
         else
             new_column_type = CSVType::UNDEFINED;
     }
-    std::string& col = split_new_col[0];
-    uint64_t new_column_key_id = get_str_id(col.data(), col.size());
+    std::string& key = split_new_col[0];
+    uint64_t key_id;
 
-    columns.emplace_back(new_column_type, col, new_column_key_id);
+    auto it = keys2id.find(key);
+    if (it != keys2id.end()) {
+        key_id = it->second | ObjectId::MASK_PROPERTY_KEY;
+    } else {
+        auto new_id = keys2id.size();
+        keys2id.insert({ key, new_id });
+        key_id = new_id | ObjectId::MASK_PROPERTY_KEY;
+    }
+
+    columns.emplace_back(new_column_type, key, key_id);
 }
 
 void OnDiskImport::verify_anon()
 {
-    for (int col_idx = 0; col_idx < (int) columns.size(); col_idx++) {
+    for (size_t col_idx = 0; col_idx < columns.size(); col_idx++) {
         if (columns[col_idx].type == CSVType::ID) {
             anonymous_nodes = false;
             column_with_id = col_idx;
@@ -590,7 +551,7 @@ void OnDiskImport::verify_edge_file_header()
     // one START_ID, one END_ID and one TYPE column. Having more or less than that
     // is a bad file and the import should stop (or at least the file should be skipped)
 
-    bool has_start_id = false, has_end_id = false, has_type = false;
+    bool has_start_id = false, has_end_id = false, has_label = false;
     for (int col_idx = 0; col_idx < (int) columns.size(); col_idx++) {
         if (columns[col_idx].type == CSVType::START_ID && !has_start_id) {
             has_start_id = true;
@@ -602,21 +563,21 @@ void OnDiskImport::verify_edge_file_header()
             column_with_id_to = col_idx;
         } else if (columns[col_idx].type == CSVType::END_ID && has_end_id)
             FATAL_ERROR("ERROR reading csv header: More than one END_ID column is present");
-        else if (columns[col_idx].type == CSVType::TYPE && !has_type) {
-            has_type = true;
-            column_with_type = col_idx;
-        } else if (columns[col_idx].type == CSVType::TYPE && has_type)
+        else if (columns[col_idx].type == CSVType::LABEL && !has_label) {
+            has_label = true;
+            column_with_edge_label = col_idx;
+        } else if (columns[col_idx].type == CSVType::LABEL && has_label)
             FATAL_ERROR("ERROR reading csv header: More than one TYPE column is present");
     }
 
-    if (!has_start_id || !has_end_id || !has_type) {
+    if (!has_start_id || !has_end_id || !has_label) {
         std::string error = "The following column(s) are missing from the header:";
         if (!has_start_id)
             error += " START_ID";
         if (!has_end_id)
             error += " END_ID";
-        if (!has_type)
-            error += " TYPE";
+        if (!has_label)
+            error += " LABEL";
         FATAL_ERROR(error);
     }
     current_line++;
@@ -735,8 +696,16 @@ void OnDiskImport::process_node_line()
         case CSVType::LABEL: {
             std::vector<std::string> labels_vector = split(col.value_str, label_splitter);
             for (auto label : labels_vector) {
-                uint64_t label_id = get_str_id(label.data(), label.size());
-                try_save_label(node_id, label_id);
+                uint64_t label_id;
+                auto it = node_labels2id.find(label);
+                if (it != node_labels2id.end()) {
+                    label_id = it->second | ObjectId::MASK_NODE_LABEL;
+                } else {
+                    auto new_id = node_labels2id.size();
+                    node_labels2id.insert({ label, new_id });
+                    label_id = new_id | ObjectId::MASK_NODE_LABEL;
+                }
+                try_save_node_label(node_id, label_id);
             }
             break;
         }
@@ -744,17 +713,17 @@ void OnDiskImport::process_node_line()
             normalize_string_literal(col);
             uint64_t value_id = get_str_id(col.value_str, col.value_size);
 
-            try_save_property(node_id, col.key_id, value_id);
+            try_save_node_property(node_id, col.key_id, value_id);
             break;
         }
         case CSVType::INT: {
             uint64_t value_id = try_parse_int(col.value_str);
-            try_save_property(node_id, col.key_id, value_id);
+            try_save_node_property(node_id, col.key_id, value_id);
             break;
         }
         case CSVType::DECIMAL: {
             uint64_t value_id = try_parse_float(col.value_str);
-            try_save_property(node_id, col.key_id, value_id);
+            try_save_node_property(node_id, col.key_id, value_id);
             break;
         }
         case CSVType::DATE: {
@@ -764,7 +733,7 @@ void OnDiskImport::process_node_line()
                 parsing_errors++;
                 break;
             }
-            try_save_property(node_id, col.key_id, value_id);
+            try_save_node_property(node_id, col.key_id, value_id);
             break;
         }
         case CSVType::DATETIME: {
@@ -774,10 +743,11 @@ void OnDiskImport::process_node_line()
                 parsing_errors++;
                 break;
             }
-            try_save_property(node_id, col.key_id, value_id);
+            try_save_node_property(node_id, col.key_id, value_id);
             break;
         }
         case CSVType::LIST: {
+            // TODO: asuming every sub item is string
             std::vector<std::string> str_list = split(col.value_str, list_splitter);
             std::vector<ObjectId> oid_list;
 
@@ -793,9 +763,9 @@ void OnDiskImport::process_node_line()
             auto list_id = ext_helper->get_or_create_ext(list_buffer, encoded_size, ObjectId::MASK_LIST_EXT);
 
             if ((list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
-                pending_properties->push_back({ node_id, col.key_id, list_id });
+                pending_node_properties->push_back({ node_id, col.key_id, list_id });
             } else {
-                properties.push_back({ node_id, col.key_id, list_id });
+                node_properties.push_back({ node_id, col.key_id, list_id });
             }
             break;
         }
@@ -812,7 +782,7 @@ void OnDiskImport::process_node_line()
 
 void OnDiskImport::save_edge_line()
 {
-    if (columns[column_with_type].value_size == 0) {
+    if (columns[column_with_edge_label].value_size == 0) {
         WARN(
             "line ",
             current_line,
@@ -822,15 +792,16 @@ void OnDiskImport::save_edge_line()
         go_to_next_line();
         return;
     }
-    uint64_t type_id;
-    if (columns[column_with_type].value_size < 8)
-        type_id = Inliner::inline_string(columns[column_with_type].value_str) | ObjectId::MASK_NAMED_NODE_INL;
-    else
-        type_id = ext_helper->get_or_create_ext(
-            columns[column_with_type].value_str,
-            columns[column_with_type].value_size,
-            ObjectId::MASK_NAMED_NODE_EXT
-        );
+    std::string label(columns[column_with_edge_label].value_str, columns[column_with_edge_label].value_size);
+    uint64_t label_id;
+    auto it = edge_labels2id.find(label);
+    if (it != edge_labels2id.end()) {
+        label_id = it->second | ObjectId::MASK_EDGE_LABEL;
+    } else {
+        auto new_id = edge_labels2id.size();
+        edge_labels2id.insert({ label, new_id });
+        label_id = new_id | ObjectId::MASK_EDGE_LABEL;
+    }
 
     if (columns[column_with_id_from].value_size == 0 || columns[column_with_id_to].value_size == 0) {
         WARN(
@@ -914,37 +885,33 @@ void OnDiskImport::save_edge_line()
 
     uint64_t edge_id = edge_count++ | ObjectId::MASK_DIRECTED_EDGE;
 
-    try_save_quad(from_id, to_id, type_id, edge_id);
+    try_save_quad(from_id, to_id, label_id, edge_id);
 
     for (auto& col : columns) {
         if (col.value_size == 0)
             continue;
         switch (col.type) {
-        // START_ID, END_ID and TYPE should do nothing
+        // START_ID, END_ID and LABEL should do nothing
         case CSVType::START_ID:
         case CSVType::END_ID:
-        case CSVType::TYPE:
+        case CSVType::LABEL:
             break;
-        case CSVType::LABEL: {
-            WARN("line ", current_line, ": Labels in edges are not supported in QuadModel. Skipping");
-            parsing_errors++;
-            break;
-        }
+
         case CSVType::STR: {
             normalize_string_literal(col);
             uint64_t value_id = get_str_id(col.value_str, col.value_size);
 
-            try_save_property(edge_id, col.key_id, value_id);
+            try_save_edge_property(edge_id, col.key_id, value_id);
             break;
         }
         case CSVType::INT: {
             uint64_t value_id = try_parse_int(col.value_str);
-            try_save_property(edge_id, col.key_id, value_id);
+            try_save_edge_property(edge_id, col.key_id, value_id);
             break;
         }
         case CSVType::DECIMAL: {
             uint64_t value_id = try_parse_float(col.value_str);
-            try_save_property(edge_id, col.key_id, value_id);
+            try_save_edge_property(edge_id, col.key_id, value_id);
             break;
         }
         case CSVType::DATE: {
@@ -954,7 +921,7 @@ void OnDiskImport::save_edge_line()
                 parsing_errors++;
                 break;
             }
-            try_save_property(edge_id, col.key_id, value_id);
+            try_save_edge_property(edge_id, col.key_id, value_id);
             break;
         }
         case CSVType::DATETIME: {
@@ -964,10 +931,11 @@ void OnDiskImport::save_edge_line()
                 parsing_errors++;
                 break;
             }
-            try_save_property(edge_id, col.key_id, value_id);
+            try_save_edge_property(edge_id, col.key_id, value_id);
             break;
         }
         case CSVType::LIST: {
+            // TODO: assuming every sub item is a string
             std::vector<std::string> str_list = split(col.value_str, list_splitter);
             std::vector<ObjectId> oid_list;
 
@@ -983,9 +951,9 @@ void OnDiskImport::save_edge_line()
             auto list_id = ext_helper->get_or_create_ext(list_buffer, encoded_size, ObjectId::MASK_LIST_EXT);
 
             if ((list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
-                pending_properties->push_back({ edge_id, col.key_id, list_id });
+                pending_edge_properties->push_back({ edge_id, col.key_id, list_id });
             } else {
-                properties.push_back({ edge_id, col.key_id, list_id });
+                edge_properties.push_back({ edge_id, col.key_id, list_id });
             }
             break;
         }
@@ -1028,57 +996,55 @@ void OnDiskImport::normalize_string_literal(CSVColumn& col)
 void OnDiskImport::try_save_declared_node(uint64_t node_id)
 {
     if ((node_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
-        pending_declared_nodes->push_back({ node_id });
+        pending_nodes->push_back({ node_id });
     } else {
-        declared_nodes.push_back({ node_id });
+        nodes.push_back({ node_id });
     }
 }
 
-void OnDiskImport::try_save_label(uint64_t node_id, uint64_t label_id)
+void OnDiskImport::try_save_node_label(uint64_t node_id, uint64_t label_id)
 {
-    if ((node_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
-        || (label_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
-    {
-        pending_labels->push_back({ node_id, label_id });
+    if ((node_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        pending_node_labels->push_back({ node_id, label_id });
     } else {
-        labels.push_back({ node_id, label_id });
+        node_labels.push_back({ node_id, label_id });
     }
 }
 
-void OnDiskImport::try_save_property(uint64_t id1, uint64_t key_id, uint64_t value_id)
+void OnDiskImport::try_save_node_property(uint64_t id1, uint64_t key_id, uint64_t value_id)
 {
     if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
         || (value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
     {
-        pending_properties->push_back({ id1, key_id, value_id });
+        pending_node_properties->push_back({ id1, key_id, value_id });
     } else {
-        properties.push_back({ id1, key_id, value_id });
+        node_properties.push_back({ id1, key_id, value_id });
     }
 }
 
-void OnDiskImport::try_save_quad(uint64_t from_id, uint64_t to_id, uint64_t type_id, uint64_t edge_id)
+void OnDiskImport::try_save_edge_property(uint64_t id1, uint64_t key_id, uint64_t value_id)
+{
+    if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
+        || (value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+    {
+        pending_edge_properties->push_back({ id1, key_id, value_id });
+    } else {
+        edge_properties.push_back({ id1, key_id, value_id });
+    }
+}
+
+void OnDiskImport::try_save_quad(uint64_t from_id, uint64_t to_id, uint64_t label_id, uint64_t edge_id)
 {
     if ((from_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
-        || (to_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
-        || (type_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+        || (to_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
     {
-        pending_edges->push_back({ from_id, to_id, type_id, edge_id });
+        pending_edges->push_back({ from_id, to_id, label_id, edge_id });
         return;
     }
 
-    edges.push_back({ from_id, to_id, type_id, edge_id });
+    edges.push_back({ from_id, to_id, label_id, edge_id });
 
     if (from_id == to_id) {
-        equal_from_to.push_back({ from_id, type_id, edge_id });
-
-        if (from_id == type_id) {
-            equal_from_to_type.push_back({ from_id, edge_id });
-        }
-    }
-    if (from_id == type_id) {
-        equal_from_type.push_back({ from_id, to_id, edge_id });
-    }
-    if (to_id == type_id) {
-        equal_to_type.push_back({ from_id, to_id, edge_id });
+        equal_from_to.push_back({ from_id, label_id, edge_id });
     }
 }

@@ -1,9 +1,10 @@
 #pragma once
 
+#include "graph_models/object_id.h"
+#include "query/parser/op/sparql/op.h"
+
 #include <cassert>
 #include <vector>
-
-#include "query/parser/op/sparql/op.h"
 
 namespace SPARQL {
 
@@ -13,16 +14,13 @@ public:
     std::vector<bool> has_undef;
     std::vector<ObjectId> values;
 
-    OpValues(
-        std::vector<VarId>&& _vars,
-        std::vector<ObjectId>&& _values
-    ) :
-        vars   (std::move(_vars)),
-        values (std::move(_values))
+    OpValues(std::vector<VarId>&& _vars, std::vector<ObjectId>&& _values) :
+        vars(std::move(_vars)),
+        values(std::move(_values))
     {
         assert(values.size() % vars.size() == 0);
         has_undef = std::vector<bool>(vars.size(), false);
-        for(size_t row = 0; row < values.size() / vars.size(); row++) {
+        for (size_t row = 0; row < values.size() / vars.size(); row++) {
             for (size_t var = 0; var < vars.size(); var++) {
                 auto i = row * vars.size() + var;
                 if (values[i].is_null()) {
@@ -32,7 +30,8 @@ public:
         }
     }
 
-    std::unique_ptr<Op> clone() const override {
+    std::unique_ptr<Op> clone() const override
+    {
         std::vector<VarId> vars_clone;
         std::vector<ObjectId> values_clone;
 
@@ -46,17 +45,16 @@ public:
             values_clone.push_back(value);
         }
 
-        return std::make_unique<OpValues>(
-            std::move(vars_clone),
-            std::move(values_clone)
-        );
+        return std::make_unique<OpValues>(std::move(vars_clone), std::move(values_clone));
     }
 
-    void accept_visitor(OpVisitor& visitor) override {
+    void accept_visitor(OpVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 
-    std::set<VarId> get_all_vars() const override {
+    std::set<VarId> get_all_vars() const override
+    {
         std::set<VarId> res;
 
         for (auto& var : vars) {
@@ -66,11 +64,13 @@ public:
         return res;
     }
 
-    std::set<VarId> get_scope_vars() const override {
+    std::set<VarId> get_scope_vars() const override
+    {
         return get_all_vars();
     }
 
-    std::set<VarId> get_safe_vars() const override {
+    std::set<VarId> get_safe_vars() const override
+    {
         std::set<VarId> res;
         for (size_t var = 0; var < vars.size(); var++) {
             if (!has_undef[var]) {
@@ -80,17 +80,22 @@ public:
         return res;
     }
 
-    std::set<VarId> get_fixable_vars() const override {
+    std::set<VarId> get_fixable_vars() const override
+    {
         return get_safe_vars();
     }
 
-    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
+    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
+    {
         os << std::string(indent, ' ') << "OpValues(";
 
         auto first = true;
         for (auto& var : vars) {
-            if (first) first = false; else os << ", ";
-            os << "?" << get_query_ctx().get_var_name(var);
+            if (first)
+                first = false;
+            else
+                os << ", ";
+            os << "?" << var;
         }
 
         os << "\n";
@@ -98,7 +103,8 @@ public:
         for (size_t i = 0; i < values.size(); i += vars.size()) {
             os << std::string(indent + 2, ' ') << '(';
             for (size_t j = 0; j < vars.size(); j++) {
-                if (j != 0) os << ", ";
+                if (j != 0)
+                    os << ", ";
                 os << values[i + j];
             }
             os << ")\n";

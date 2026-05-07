@@ -1,9 +1,8 @@
 #include "assign_properties.h"
 
-#include <cassert>
-
 #include "graph_models/quad_model/quad_model.h"
-#include "query/executor/binding_iter/scan_ranges/scan_range.h"
+
+#include <cassert>
 
 using namespace MQL;
 
@@ -11,25 +10,14 @@ AssignProperties::AssignProperties(
     std::unique_ptr<BindingIter> child_iter,
     std::vector<ExprVarProperty> var_properties
 ) :
-    child_iter(std::move(child_iter))
-{
-    assert(!var_properties.empty());
-    for (auto& e : var_properties) {
-        std::array<std::unique_ptr<ScanRange>, 3> ranges { ScanRange::get(e.var_without_property, true),
-                                                           ScanRange::get(e.key),
-                                                           ScanRange::get(e.var_with_property, false) };
-        prop_scans.emplace_back(*quad_model.object_key_value, std::move(ranges));
-        property_vars.emplace_back(e.var_with_property);
-    }
-}
+    child_iter(std::move(child_iter)),
+    var_properties(std::move(var_properties))
+{ }
 
 void AssignProperties::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
     child_iter->begin(*parent_binding);
-    for (auto& scan : prop_scans) {
-        scan.begin(*parent_binding);
-    }
 }
 
 void AssignProperties::_reset()
@@ -39,23 +27,38 @@ void AssignProperties::_reset()
 
 bool AssignProperties::_next()
 {
-    if (child_iter->next()) {
-        for (auto& scan : prop_scans) {
-            scan.assign_nulls();
-            scan.reset();
-            scan.next();
-        }
-
-        return true;
+    if (!child_iter->next()) {
+        return false;
     }
-    return false;
+    for (auto& e : var_properties) {
+        auto obj = (*parent_binding)[e.var_without_property];
+        BptIter<3> it;
+        Record<3> min = { obj.id, e.key.id, 0 };
+        Record<3> max = { obj.id, e.key.id, UINT64_MAX };
+        if (obj.type() == ObjectType::DirectedEdge) {
+            it = quad_model.edge_key_value
+                     ->get_range(&get_query_ctx().thread_info.interruption_requested, min, max);
+
+        } else {
+            it = quad_model.node_key_value
+                     ->get_range(&get_query_ctx().thread_info.interruption_requested, min, max);
+        }
+        if (auto next = it.next()) {
+            uint64_t id = (*next)[2];
+            parent_binding->add(e.var_with_property, ObjectId(id));
+        } else {
+            parent_binding->add(e.var_with_property, ObjectId::get_null());
+        }
+    }
+
+    return true;
 }
 
 void AssignProperties::assign_nulls()
 {
     child_iter->assign_nulls();
-    for (auto& scan : prop_scans) {
-        scan.assign_nulls();
+    for (auto& e : var_properties) {
+        parent_binding->add(e.var_with_property, ObjectId::get_null());
     }
 }
 

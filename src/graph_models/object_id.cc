@@ -107,10 +107,8 @@ std::string to_string(ObjectType type)
         return "DirectedEdge";
     case ObjectType::UndirectedEdge:
         return "UndirectedEdge";
-    case ObjectType::EdgeKey:
-        return "EdgeKey";
-    case ObjectType::NodeKey:
-        return "NodeKey";
+    case ObjectType::PropertyKey:
+        return "PropertyKey";
     case ObjectType::EdgeLabel:
         return "EdgeLabel";
     case ObjectType::NodeLabel:
@@ -119,6 +117,8 @@ std::string to_string(ObjectType type)
         return "Path";
     case ObjectType::NotFound:
         return "NotFound";
+    case ObjectType::NamedNodeHexInl:
+        return "NamedNodeHexInl";
     case ObjectType::NamedNodeHexExt:
         return "NamedNodeHexExt";
     case ObjectType::NamedNodeHexTmp:

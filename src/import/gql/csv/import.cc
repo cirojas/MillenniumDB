@@ -592,14 +592,14 @@ void OnDiskImport::save_empty_body_column_to_buffer()
     current_column++;
 }
 
-uint64_t OnDiskImport::get_node_key_id(const std::string& column_name)
+uint64_t OnDiskImport::get_property_key_id(const std::string& column_name)
 {
     auto it = node_keys_map.find(column_name);
     if (it != node_keys_map.end()) {
         return it->second;
     } else {
-        auto res = current_node_key++ | ObjectId::MASK_NODE_KEY;
-        catalog.node_keys_str.push_back(column_name);
+        auto res = current_node_key++ | ObjectId::MASK_PROPERTY_KEY;
+        catalog.keys_str.push_back(column_name);
         node_keys_map.insert({ column_name, res });
         return res;
     }
@@ -694,7 +694,7 @@ void OnDiskImport::process_node_line()
             normalize_string_literal(col);
             value_id = get_str_id(col.value_str, col.value_size);
 
-            uint64_t key_id = get_node_key_id(col.name);
+            uint64_t key_id = get_property_key_id(col.name);
             if ((value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
                 pending_node_properties->push_back({ node_id, key_id, value_id });
             } else {
@@ -704,13 +704,13 @@ void OnDiskImport::process_node_line()
         }
         case CSVType::INT: {
             uint64_t value_id = try_parse_int(col.value_str);
-            uint64_t key_id = get_node_key_id(col.name);
+            uint64_t key_id = get_property_key_id(col.name);
             node_properties.push_back({ node_id, key_id, value_id });
             break;
         }
         case CSVType::DECIMAL: {
             uint64_t value_id = try_parse_float(col.value_str);
-            uint64_t key_id = get_node_key_id(col.name);
+            uint64_t key_id = get_property_key_id(col.name);
             node_properties.push_back({ node_id, key_id, value_id });
             break;
         }
@@ -721,7 +721,7 @@ void OnDiskImport::process_node_line()
                 parsing_errors++;
                 break;
             }
-            uint64_t key_id = get_node_key_id(col.name);
+            uint64_t key_id = get_property_key_id(col.name);
             node_properties.push_back({ node_id, key_id, value_id });
             break;
         }
@@ -732,7 +732,7 @@ void OnDiskImport::process_node_line()
                 parsing_errors++;
                 break;
             }
-            uint64_t key_id = get_node_key_id(col.name);
+            uint64_t key_id = get_property_key_id(col.name);
             node_properties.push_back({ node_id, key_id, value_id });
             break;
         }
@@ -751,7 +751,7 @@ void OnDiskImport::process_node_line()
             uint64_t encoded_size = ListEncoder::encode(oid_list, list_buffer);
             auto list_id = ext_helper->get_or_create_ext(list_buffer, encoded_size, ObjectId::MASK_LIST_EXT);
 
-            uint64_t key_id = get_node_key_id(col.name);
+            uint64_t key_id = get_property_key_id(col.name);
             if ((list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
                 pending_node_properties->push_back({ node_id, key_id, list_id });
             } else {
@@ -767,19 +767,6 @@ void OnDiskImport::process_node_line()
         }
     }
     go_to_next_line();
-}
-
-uint64_t OnDiskImport::get_edge_key_id(const std::string& column_name)
-{
-    auto it = edge_keys_map.find(column_name);
-    if (it != edge_keys_map.end()) {
-        return it->second;
-    } else {
-        auto res = current_edge_key++ | ObjectId::MASK_EDGE_KEY;
-        catalog.edge_keys_str.push_back(column_name);
-        edge_keys_map.insert({ column_name, res });
-        return res;
-    }
 }
 
 void OnDiskImport::save_edge_line()
@@ -922,7 +909,7 @@ void OnDiskImport::save_edge_line()
             normalize_string_literal(col);
             value_id = get_str_id(col.value_str, col.value_size);
 
-            uint64_t key_id = get_edge_key_id(col.name);
+            uint64_t key_id = get_property_key_id(col.name);
             if ((value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
                 pending_edge_properties->push_back({ edge_id, key_id, value_id });
             } else {
@@ -932,13 +919,13 @@ void OnDiskImport::save_edge_line()
         }
         case CSVType::INT: {
             uint64_t value_id = try_parse_int(col.value_str);
-            uint64_t key_id = get_edge_key_id(col.name);
+            uint64_t key_id = get_property_key_id(col.name);
             edge_properties.push_back({ edge_id, key_id, value_id });
             break;
         }
         case CSVType::DECIMAL: {
             uint64_t value_id = try_parse_float(col.value_str);
-            uint64_t key_id = get_edge_key_id(col.name);
+            uint64_t key_id = get_property_key_id(col.name);
             edge_properties.push_back({ edge_id, key_id, value_id });
             break;
         }
@@ -949,7 +936,7 @@ void OnDiskImport::save_edge_line()
                 parsing_errors++;
                 break;
             }
-            uint64_t key_id = get_edge_key_id(col.name);
+            uint64_t key_id = get_property_key_id(col.name);
             edge_properties.push_back({ edge_id, key_id, value_id });
             break;
         }
@@ -960,7 +947,7 @@ void OnDiskImport::save_edge_line()
                 parsing_errors++;
                 break;
             }
-            uint64_t key_id = get_edge_key_id(col.name);
+            uint64_t key_id = get_property_key_id(col.name);
             edge_properties.push_back({ edge_id, key_id, value_id });
             break;
         }
@@ -979,7 +966,7 @@ void OnDiskImport::save_edge_line()
             uint64_t encoded_size = ListEncoder::encode(oid_list, list_buffer);
             auto list_id = ext_helper->get_or_create_ext(list_buffer, encoded_size, ObjectId::MASK_LIST_EXT);
 
-            uint64_t key_id = get_edge_key_id(col.name);
+            uint64_t key_id = get_property_key_id(col.name);
             if ((list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
                 pending_edge_properties->push_back({ edge_id, key_id, list_id });
             } else {

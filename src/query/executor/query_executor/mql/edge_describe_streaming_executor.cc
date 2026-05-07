@@ -47,7 +47,7 @@ uint64_t EdgeDescribeStreamingExecutor::execute(MDBServer::StreamingResponseWrit
         min_ids[i] = 0;
         max_ids[i] = UINT64_MAX;
     }
-    auto it = quad_model.edge_from_to_type->get_range(&interruption_requested, min_ids, max_ids);
+    auto it = quad_model.edge_from_to_label->get_range(&interruption_requested, min_ids, max_ids);
     const Record<4>* record = it.next();
 
     if (record == nullptr) {
@@ -65,7 +65,7 @@ uint64_t EdgeDescribeStreamingExecutor::execute(MDBServer::StreamingResponseWrit
 
     response_writer.write_object_id(ObjectId((*record)[1])); // from
     response_writer.write_object_id(ObjectId((*record)[2])); // to
-    response_writer.write_object_id(ObjectId((*record)[3])); // type
+    response_writer.write_object_id(ObjectId((*record)[3])); // label
 
     // Properties
     if (properties_limit > 0) {

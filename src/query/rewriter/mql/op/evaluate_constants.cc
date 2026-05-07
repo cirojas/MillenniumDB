@@ -3,6 +3,7 @@
 #include "query/optimizer/quad_model/expr_to_binding_expr.h"
 #include "query/parser/expr/mql/exprs.h"
 #include "query/parser/op/mql/ops.h"
+#include "query/update/mql/update_action/update_actions.h"
 
 using namespace MQL;
 
@@ -274,11 +275,6 @@ void EvaluateConstantsExpr::visit(ExprStr& expr)
 }
 
 void EvaluateConstantsExpr::visit(ExprLabels& expr)
-{
-    visit_and_try_eval_expr(expr.expr);
-}
-
-void EvaluateConstantsExpr::visit(ExprType& expr)
 {
     visit_and_try_eval_expr(expr.expr);
 }

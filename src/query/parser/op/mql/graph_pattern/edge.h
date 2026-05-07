@@ -8,13 +8,13 @@ class Edge {
 public:
     const Id from;
     const Id to;
-    const Id type;
+    const Id label;
     const Id edge;
 
-    Edge(Id from, Id to, Id type, Id edge) :
+    Edge(Id from, Id to, Id label, Id edge) :
         from(from),
         to(to),
-        type(type),
+        label(label),
         edge(edge)
     { }
 
@@ -33,13 +33,13 @@ public:
         } else if (other.edge < edge) {
             return false;
         } else {
-            return type < other.type;
+            return label < other.label;
         }
     }
 
     std::ostream& print(std::ostream& os, int indent = 0) const
     {
-        return os << std::string(indent, ' ') << "Edge(" << from << ", " << to << ", " << type << ", " << edge
+        return os << std::string(indent, ' ') << "Edge(" << from << ", " << to << ", " << label << ", " << edge
                   << ")\n";
     }
 };

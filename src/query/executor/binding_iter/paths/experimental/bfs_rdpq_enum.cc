@@ -1,11 +1,11 @@
 #include "bfs_rdpq_enum.h"
 
-#include <cassert>
-
 #include "graph_models/quad_model/quad_model.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/record.h"
 #include "system/path_manager.h"
+
+#include <cassert>
 
 using namespace std;
 using namespace Paths::Any;
@@ -13,7 +13,8 @@ using namespace Paths::Any;
 // Evaluate data checks for a specific object
 bool BFS_RDPQEnum::eval_data_check(
     uint64_t obj,
-    vector<tuple<Operators, ObjectId, ObjectId>>& property_checks
+    vector<tuple<Operators, ObjectId, ObjectId>>& property_checks,
+    bool is_node
 )
 {
     // Perform all data checks in transition
@@ -32,11 +33,16 @@ bool BFS_RDPQEnum::eval_data_check(
         max_prop_ids[1] = key_id;
         min_prop_ids[2] = 0;
         max_prop_ids[2] = UINT64_MAX;
-        auto prop_iter = quad_model.object_key_value->get_range(
-            &get_query_ctx().thread_info.interruption_requested,
-            Record<3>(min_prop_ids),
-            Record<3>(max_prop_ids)
-        );
+        auto prop_iter = is_node ? quad_model.node_key_value->get_range(
+                                       &get_query_ctx().thread_info.interruption_requested,
+                                       Record<3>(min_prop_ids),
+                                       Record<3>(max_prop_ids)
+                                   )
+                                 : quad_model.edge_key_value->get_range(
+                                       &get_query_ctx().thread_info.interruption_requested,
+                                       Record<3>(min_prop_ids),
+                                       Record<3>(max_prop_ids)
+                                   );
         auto prop_record = prop_iter.next();
 
         // Perform specific data check
@@ -69,7 +75,7 @@ void BFS_RDPQEnum::_begin(Binding& _parent_binding)
     // Obtain states connected with the start state
     for (auto& t : automaton.from_to_connections[automaton.get_start()]) {
         // Perform all data checks in transition
-        bool check_succeeded = eval_data_check(start_object_id.id, t.property_checks);
+        bool check_succeeded = eval_data_check(start_object_id.id, t.property_checks, true);
 
         // All the data checks succeeded
         if (check_succeeded) {
@@ -179,7 +185,7 @@ boost::unordered_node_set<SearchState, std::hash<SearchState>>::iterator
             // Perform data checks for the edge transition
             bool edge_succeeded = true;
             if (current_data_transition == 0) { // Avoid performing data checks repeatedly for the same edge
-                edge_succeeded = eval_data_check((*child_record)[3], transition.property_checks);
+                edge_succeeded = eval_data_check((*child_record)[3], transition.property_checks, false);
             }
 
             // Perform all data checks in transition if edge data check has succeeded
@@ -191,7 +197,7 @@ boost::unordered_node_set<SearchState, std::hash<SearchState>>::iterator
                 current_data_transition++;
 
                 // Perform data checks
-                bool succeeded = eval_data_check((*child_record)[2], data_transition.property_checks);
+                bool succeeded = eval_data_check((*child_record)[2], data_transition.property_checks, true);
 
                 // Expand destination
                 if (succeeded) {
@@ -242,7 +248,7 @@ void BFS_RDPQEnum::set_iter(const SearchState& current_state)
         max_ids[0] = current_state.node_id.id;
         min_ids[1] = transition.type_id.id;
         max_ids[1] = transition.type_id.id;
-        iter = quad_model.to_type_from_edge->get_range(
+        iter = quad_model.to_label_from_edge->get_range(
             &get_query_ctx().thread_info.interruption_requested,
             Record<4>(min_ids),
             Record<4>(max_ids)
@@ -252,7 +258,7 @@ void BFS_RDPQEnum::set_iter(const SearchState& current_state)
         max_ids[0] = transition.type_id.id;
         min_ids[1] = current_state.node_id.id;
         max_ids[1] = current_state.node_id.id;
-        iter = quad_model.type_from_to_edge->get_range(
+        iter = quad_model.label_from_to_edge->get_range(
             &get_query_ctx().thread_info.interruption_requested,
             Record<4>(min_ids),
             Record<4>(max_ids)
@@ -278,7 +284,7 @@ void BFS_RDPQEnum::_reset()
     // Obtain states connected with the start state
     for (auto& t : automaton.from_to_connections[automaton.get_start()]) {
         // Perform all data checks in transition
-        bool check_succeeded = eval_data_check(start_object_id.id, t.property_checks);
+        bool check_succeeded = eval_data_check(start_object_id.id, t.property_checks, true);
 
         // All the data checks succeeded
         if (check_succeeded) {

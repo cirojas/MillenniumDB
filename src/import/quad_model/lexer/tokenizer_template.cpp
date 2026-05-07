@@ -98,6 +98,8 @@ Import::QuadModel::Token MQLTokenizer::_get_token()
             l_bracket    = '[';
             r_bracket    = ']';
             comma        = ',';
+            hex_id       = ("0x" | "0X") ([0-9a-fA-F][0-9a-fA-F])+;
+            uuid_id      = [0-9a-fA-F]{8} [-] [0-9a-fA-F]{4} [-] [0-9a-fA-F]{4} [-] [0-9a-fA-F]{4} [-] [0-9a-fA-F]{12};
 
             colon        { return Import::QuadModel::Token::COLON; }
             l_arrow      { return Import::QuadModel::Token::L_ARROW; }
@@ -107,6 +109,8 @@ Import::QuadModel::Token MQLTokenizer::_get_token()
             string       { return Import::QuadModel::Token::STRING; }
             anon         { return Import::QuadModel::Token::ANON; }
             typed_string { return Import::QuadModel::Token::TYPED_STRING; }
+            hex_id       { return Import::QuadModel::Token::HEX_ID; }
+            uuid_id      { return Import::QuadModel::Token::UUID_ID; }
             identifier   { return Import::QuadModel::Token::IDENTIFIER; }
             integer      { return Import::QuadModel::Token::INTEGER; }
             decimal      { return Import::QuadModel::Token::FLOAT; }

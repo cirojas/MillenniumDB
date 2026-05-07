@@ -1,9 +1,9 @@
 #pragma once
 
-#include <string>
-
 #include "query/parser/op/sparql/op.h"
 #include "storage/index/hnsw/hnsw_metric.h"
+
+#include <string>
 
 namespace SPARQL {
 

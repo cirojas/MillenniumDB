@@ -24,19 +24,19 @@ insertStatement:
 insertLinearPattern: insertNode (insertEdge insertNode)*;
 
 insertNode:
-	'(' (identifier | VARIABLE)? TYPE* insertProperties? ')';
+	'(' (fixedNode | VARIABLE)? LABEL* insertProperties? ')';
 
 insertEdge:
-	'<' '-' '[' TYPE insertProperties? ']' '-'
-	| '-' '[' TYPE insertProperties? ']' '-' '>';
+	'<' '-' '[' LABEL insertProperties? ']' '-'
+	| '-' '[' LABEL insertProperties? ']' '-' '>';
 
 insertProperties: '{' insertProperty (',' insertProperty)* '}';
 
 // insertProperty2 is necessary when the property is written without spaces after the colon,
-// example: key:date("2001-02-03") key :date identifier TYPE '(' STRING ')';
+// example: key:date("2001-02-03") key :date identifier LABEL '(' STRING ')';
 insertProperty:
 	identifier (':' value | TRUE_PROP | FALSE_PROP)	# insertProperty1
-	| identifier TYPE '(' STRING ')'				# insertProperty2
+	| identifier LABEL '(' STRING ')'				# insertProperty2
 	| identifier ':' conditionalOrExpr				# insertProperty3;
 
 deleteStatement:
@@ -48,12 +48,12 @@ setStatement: K_SET setAtom (',' setAtom)*;
 
 setAtom: (fixedObj | VARIABLE) KEY '=' conditionalOrExpr
 	| (fixedObj | VARIABLE) insertProperties
-	| (fixedObj | VARIABLE) (TYPE)+;
+	| (fixedObj | VARIABLE) (LABEL)+;
 
 removeStatement: K_REMOVE removeAtom (',' removeAtom)*;
 
 removeAtom: (fixedObj | VARIABLE) KEY
-	| (fixedObj | VARIABLE) (TYPE)+;
+	| (fixedObj | VARIABLE) (LABEL)+;
 
 simpleQuery:
 	primitiveStatement+ groupByStatement? havingStatement? orderByStatement? (
@@ -118,11 +118,9 @@ limitClause: K_LIMIT UNSIGNED_INTEGER;
 
 offsetClause: K_OFFSET UNSIGNED_INTEGER;
 
-// returnItem:
-// 	VARIABLE KEY?												# returnItemVar
-// 	| aggregateFunc '(' VARIABLE KEY? ')' alias?				# returnItemAgg
-// 	| K_COUNT '(' K_DISTINCT? (VARIABLE KEY? | '*') ')' alias?	# returnItemCount
-// 	| conditionalOrExpr alias?									# returnItemExpr;
+// returnItem: VARIABLE KEY? # returnItemVar | aggregateFunc '(' VARIABLE KEY? ')' alias? #
+// returnItemAgg | K_COUNT '(' K_DISTINCT? (VARIABLE KEY? | '*') ')' alias? # returnItemCount |
+// conditionalOrExpr alias? # returnItemExpr;
 
 returnItem: conditionalOrExpr alias?;
 
@@ -155,7 +153,7 @@ pathAlternatives: pathSequence ('|' pathSequence)*;
 pathSequence: pathAtom ('/' pathAtom)*;
 
 pathAtom:
-	'^'? TYPE pathSuffix?						# pathAtomSimple
+	'^'? LABEL pathSuffix?						# pathAtomSimple
 	| '^'? '(' pathAlternatives ')' pathSuffix?	# pathAtomAlternatives;
 
 pathSuffix:
@@ -177,24 +175,26 @@ pathType: (K_ANY | K_ALL) (K_SHORTEST)? (
 		| K_TRAILS
 	)?;
 
-node: '(' (fixedObj | varNode) ')';
+node: '(' (fixedNode | varNode) ')';
 
-fixedObj: identifier | ANON_ID | EDGE_ID;
+fixedNode: identifier | ANON_ID | UUID | HEX | STRING;
 
-varNode: VARIABLE? TYPE* properties?;
+fixedObj: fixedNode | EDGE_ID;
+
+varNode: VARIABLE? LABEL* properties?;
 
 edge: '<' ('-' edgeInside)? '-' | '-' (edgeInside '-')? '>';
 
 edgeInside:
-	'[' (VARIABLE | EDGE_ID)? (TYPE | TYPE_VAR)? properties? ']';
+	'[' (VARIABLE | EDGE_ID)? (LABEL | LABEL_VAR)? properties? ']';
 
 properties: '{' property (',' property)* '}';
 
 // property2 is necessary when the property is written without spaces after the colon, example:
-// key:date("2001-02-03") key :date identifier TYPE '(' STRING ')';
+// key:date("2001-02-03") key :date identifier LABEL '(' STRING ')';
 property:
 	identifier (':' value | TRUE_PROP | FALSE_PROP)				# property1
-	| identifier TYPE '(' STRING ')'							# property2
+	| identifier LABEL '(' STRING ')'							# property2
 	| identifier K_IS K_NOT? exprTypename (conditionalOrType)*	# property3
 	| identifier (
 		op = ('==' | '!=' | '<' | '>' | '<=' | '>=') value
@@ -258,7 +258,6 @@ function:
 	| normalize
 	| str
 	| labels
-	| type
 	| propertiesFunction;
 
 regex:
@@ -288,8 +287,6 @@ str: K_STR '(' conditionalOrExpr ')';
 labels: K_LABELS '(' conditionalOrExpr ')';
 
 propertiesFunction: K_PROPERTIES '(' conditionalOrExpr ')';
-
-type: K_TYPE '(' conditionalOrExpr ')';
 
 textSearchIndexMode: K_PREFIX | K_MATCH;
 

@@ -152,12 +152,8 @@ public:
             write_typed_string(gql_model.catalog.edge_labels_str[value], Protocol::DataType::STRING);
             break;
         }
-        case ObjectType::NodeKey: {
-            write_typed_string(gql_model.catalog.node_keys_str[value], Protocol::DataType::STRING);
-            break;
-        }
-        case ObjectType::EdgeKey: {
-            write_typed_string(gql_model.catalog.edge_keys_str[value], Protocol::DataType::STRING);
+        case ObjectType::PropertyKey: {
+            write_typed_string(gql_model.catalog.keys_str[value], Protocol::DataType::STRING);
             break;
         }
         case ObjectType::DictionaryExt:
@@ -202,6 +198,7 @@ public:
         case ObjectType::NamedNodeInl:
         case ObjectType::NamedNodeExt:
         case ObjectType::NamedNodeTmp:
+        case ObjectType::NamedNodeHexInl:
         case ObjectType::NamedNodeHexExt:
         case ObjectType::NamedNodeHexTmp:
         case ObjectType::NamedNodeUuidExt:

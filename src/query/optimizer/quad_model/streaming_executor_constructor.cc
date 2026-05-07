@@ -37,7 +37,7 @@ void StreamingExecutorConstructor::visit(OpDescribe& op_describe)
             ranges[0] = std::make_unique<Term>(object_id);
             ranges[1] = std::make_unique<UnassignedVar>(var0);
             ranges[2] = std::make_unique<UnassignedVar>(var1);
-            properties = std::make_unique<IndexScan<3>>(*quad_model.object_key_value, std::move(ranges));
+            properties = std::make_unique<IndexScan<3>>(*quad_model.edge_key_value, std::move(ranges));
         }
 
         executor = std::make_unique<MQL::EdgeDescribeStreamingExecutor>(
@@ -63,7 +63,7 @@ void StreamingExecutorConstructor::visit(OpDescribe& op_describe)
             ranges[0] = std::make_unique<Term>(object_id);
             ranges[1] = std::make_unique<UnassignedVar>(var0);
             ranges[2] = std::make_unique<UnassignedVar>(var1);
-            properties = std::make_unique<IndexScan<3>>(*quad_model.object_key_value, std::move(ranges));
+            properties = std::make_unique<IndexScan<3>>(*quad_model.node_key_value, std::move(ranges));
         }
 
         {
@@ -73,7 +73,7 @@ void StreamingExecutorConstructor::visit(OpDescribe& op_describe)
             ranges[2] = std::make_unique<UnassignedVar>(var1);
             ranges[3] = std::make_unique<UnassignedVar>(var2);
             outgoing_connections = std::make_unique<IndexScan<4>>(
-                *quad_model.from_to_type_edge,
+                *quad_model.from_to_label_edge,
                 std::move(ranges)
             );
         }
@@ -85,7 +85,7 @@ void StreamingExecutorConstructor::visit(OpDescribe& op_describe)
             ranges[2] = std::make_unique<UnassignedVar>(var1);
             ranges[3] = std::make_unique<UnassignedVar>(var2);
             incoming_connections = std::make_unique<IndexScan<4>>(
-                *quad_model.to_type_from_edge,
+                *quad_model.to_label_from_edge,
                 std::move(ranges)
             );
         }

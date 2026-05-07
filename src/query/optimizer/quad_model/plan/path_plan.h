@@ -52,8 +52,11 @@ public:
 
     std::unique_ptr<BindingIter> get_binding_iter() const override;
 
-    bool get_leapfrog_iter(std::vector<std::unique_ptr<LeapfrogIter>>&, std::vector<VarId>&, uint_fast32_t&)
-        const override
+    bool get_leapfrog_iter(
+        std::vector<std::unique_ptr<LeapfrogIter>>&,
+        std::vector<VarId>&,
+        uint_fast32_t&
+    ) const override
     {
         return false;
     }

@@ -30,7 +30,6 @@ class BindingExprEditDistance;
 class BindingExprNormalize;
 class BindingExprStr;
 class BindingExprLabels;
-class BindingExprType;
 class BindingExprProperties;
 } // namespace MQL
 
@@ -199,7 +198,6 @@ public:
     virtual void visit(MQL::BindingExprNormalize&)         { throw LogicException("visit MQL::BindingExprNormalize not implemented"); }
     virtual void visit(MQL::BindingExprStr&)               { throw LogicException("visit MQL::BindingExprStr not implemented"); }
     virtual void visit(MQL::BindingExprLabels&)            { throw LogicException("visit MQL::BindingExprLabels not implemented"); }
-    virtual void visit(MQL::BindingExprType&)              { throw LogicException("visit MQL::BindingExprType not implemented"); }
     virtual void visit(MQL::BindingExprProperties&)        { throw LogicException("visit MQL::BindingExprProperties not implemented"); }
 
     virtual void visit(SPARQL::BindingExprAbs&)            { throw LogicException("visit SPARQL::BindingExprAbs not implemented"); }
@@ -270,7 +268,7 @@ public:
     virtual void visit(SPARQL::BindingExprCosineDistance&)    { throw LogicException("visit SPARQL::BindingExprCosineDistance not implemented"); }
     virtual void visit(SPARQL::BindingExprCosineSimilarity&)  { throw LogicException("visit SPARQL::BindingExprCosineSimilarity not implemented"); }
     virtual void visit(SPARQL::BindingExprDot&)               { throw LogicException("visit SPARQL::BindingExprDot not implemented"); }
-    virtual void visit(SPARQL::BindingExprEuclideanDistance&) { throw LogicException("visit SPARQL::BindingExprEuclideanDistance not implemented"); }
+    virtual void visit(SPARQL::BindingExprEuclideanDistance&) { throw LogicException("visit SPARQL::BindingExprEuclideanDistance "); }
     virtual void visit(SPARQL::BindingExprManhattanDistance&) { throw LogicException("visit SPARQL::BindingExprManhattanDistance not implemented"); }
     virtual void visit(SPARQL::BindingExprPow&)               { throw LogicException("visit SPARQL::BindingExprPow not implemented"); }
     virtual void visit(SPARQL::BindingExprSqrt&)              { throw LogicException("visit SPARQL::BindingExprSqrt not implemented"); }

@@ -4,6 +4,9 @@
 #include "query/parser/expr/mql/expr.h"
 #include "query/parser/op/mql/op.h"
 
+#include <cassert>
+#include <vector>
+
 namespace MQL {
 
 class OpCall : public Op {

@@ -74,28 +74,15 @@ uint64_t OnDiskImport::get_edge_label_id(const std::string& label)
     }
 }
 
-uint64_t OnDiskImport::get_node_key_id()
+uint64_t OnDiskImport::get_property_key_id()
 {
     auto it = node_keys_map.find(saved_key);
     if (it != node_keys_map.end()) {
         return it->second;
     } else {
-        auto res = current_node_key++ | ObjectId::MASK_NODE_KEY;
-        catalog.node_keys_str.push_back(saved_key);
+        auto res = current_node_key++ | ObjectId::MASK_PROPERTY_KEY;
+        catalog.keys_str.push_back(saved_key);
         node_keys_map.insert({ saved_key, res });
-        return res;
-    }
-}
-
-uint64_t OnDiskImport::get_edge_key_id()
-{
-    auto it = edge_keys_map.find(saved_key);
-    if (it != edge_keys_map.end()) {
-        return it->second;
-    } else {
-        auto res = current_edge_key++ | ObjectId::MASK_EDGE_KEY;
-        catalog.edge_keys_str.push_back(saved_key);
-        edge_keys_map.insert({ saved_key, res });
         return res;
     }
 }
@@ -184,7 +171,7 @@ void OnDiskImport::add_node_label()
 void OnDiskImport::add_node_prop_string()
 {
     normalize_string_literal();
-    auto key_id = get_node_key_id();
+    auto key_id = get_property_key_id();
     auto value_id = get_str_id();
 
     if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
@@ -198,7 +185,7 @@ void OnDiskImport::add_node_prop_string()
 
 void OnDiskImport::add_node_prop_int()
 {
-    auto key_id = get_node_key_id();
+    auto key_id = get_property_key_id();
     uint64_t value_id = try_parse_int(lexer.str);
 
     if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
@@ -210,7 +197,7 @@ void OnDiskImport::add_node_prop_int()
 
 void OnDiskImport::add_node_prop_float()
 {
-    auto key_id = get_node_key_id();
+    auto key_id = get_property_key_id();
     uint64_t value_id = try_parse_float(lexer.str);
 
     if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
@@ -222,7 +209,7 @@ void OnDiskImport::add_node_prop_float()
 
 void OnDiskImport::add_node_prop_true()
 {
-    auto key_id = get_node_key_id();
+    auto key_id = get_property_key_id();
     uint64_t value_id = Common::Conversions::pack_bool(true).id;
 
     if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
@@ -234,7 +221,7 @@ void OnDiskImport::add_node_prop_true()
 
 void OnDiskImport::add_node_prop_false()
 {
-    auto key_id = get_node_key_id();
+    auto key_id = get_property_key_id();
     uint64_t value_id = Common::Conversions::pack_bool(false).id;
 
     if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
@@ -252,7 +239,7 @@ void OnDiskImport::add_node_prop_datatype()
         return;
     }
 
-    auto key_id = get_node_key_id();
+    auto key_id = get_property_key_id();
     if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
         pending_node_properties->push_back({ id1, key_id, value_id });
     } else {
@@ -427,7 +414,7 @@ void OnDiskImport::add_edge_label()
 void OnDiskImport::add_edge_prop_datatype()
 {
     get_datatype_value_id();
-    auto key_id = get_edge_key_id();
+    auto key_id = get_property_key_id();
     uint64_t value_id = get_datatype_value_id();
     edge_properties.push_back({ id1, key_id, value_id });
 }
@@ -435,7 +422,7 @@ void OnDiskImport::add_edge_prop_datatype()
 void OnDiskImport::add_edge_prop_string()
 {
     normalize_string_literal();
-    auto key_id = get_edge_key_id();
+    auto key_id = get_property_key_id();
     auto value_id = get_str_id();
 
     if ((value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
@@ -447,28 +434,28 @@ void OnDiskImport::add_edge_prop_string()
 
 void OnDiskImport::add_edge_prop_int()
 {
-    auto key_id = get_edge_key_id();
+    auto key_id = get_property_key_id();
     uint64_t value_id = try_parse_int(lexer.str);
     edge_properties.push_back({ edge_id, key_id, value_id });
 }
 
 void OnDiskImport::add_edge_prop_float()
 {
-    auto key_id = get_edge_key_id();
+    auto key_id = get_property_key_id();
     uint64_t value_id = try_parse_float(lexer.str);
     edge_properties.push_back({ edge_id, key_id, value_id });
 }
 
 void OnDiskImport::add_edge_prop_true()
 {
-    auto key_id = get_edge_key_id();
+    auto key_id = get_property_key_id();
     uint64_t value_id = Common::Conversions::pack_bool(true).id;
     edge_properties.push_back({ edge_id, key_id, value_id });
 }
 
 void OnDiskImport::add_edge_prop_false()
 {
-    auto key_id = get_edge_key_id();
+    auto key_id = get_property_key_id();
     uint64_t value_id = Common::Conversions::pack_bool(false).id;
     edge_properties.push_back({ edge_id, key_id, value_id });
 }
@@ -518,7 +505,7 @@ void OnDiskImport::save_node_list()
         return;
     }
 
-    auto key_id = get_node_key_id();
+    auto key_id = get_property_key_id();
 
     if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
         || (list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
@@ -544,7 +531,7 @@ void OnDiskImport::save_edge_list()
         return;
     }
 
-    auto key_id = get_edge_key_id();
+    auto key_id = get_property_key_id();
 
     if ((edge_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
         || (list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
@@ -823,7 +810,7 @@ void OnDiskImport::start_import(MDBIstream& in)
 
             { // write node mapping as properties
                 saved_key = "_id";
-                auto key_id = get_node_key_id();
+                auto key_id = get_property_key_id();
                 for (auto&& [k, v] : node_ids_map) {
                     node_properties.push_back({ v, key_id, k });
                 }
@@ -859,7 +846,7 @@ void OnDiskImport::start_import(MDBIstream& in)
 
     { // write node mapping as properties
         saved_key = "_id";
-        auto key_id = get_node_key_id();
+        auto key_id = get_property_key_id();
         for (auto&& [k, v] : node_ids_map) {
             node_properties.push_back({ v, key_id, k });
         }

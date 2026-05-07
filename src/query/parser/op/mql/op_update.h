@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "query/parser/op/mql/op.h"
-#include "query/update/mql/update_action.h"
+#include "query/update/mql/update_action/update_action.h"
 
 namespace MQL {
 class OpUpdate : public Op {

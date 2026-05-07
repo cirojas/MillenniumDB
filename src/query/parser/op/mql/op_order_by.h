@@ -1,11 +1,11 @@
 #pragma once
 
+#include "query/parser/expr/mql/expr.h"
+#include "query/parser/op/mql/op.h"
+
 #include <cassert>
 #include <string>
 #include <vector>
-
-#include "query/parser/expr/mql/expr.h"
-#include "query/parser/op/mql/op.h"
 
 namespace MQL {
 

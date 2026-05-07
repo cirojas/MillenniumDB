@@ -36,21 +36,18 @@ QuadModel::QuadModel() :
     label_node = make_unique<BPlusTree<2>>("label_node");
     node_label = make_unique<BPlusTree<2>>("node_label");
 
-    object_key_value = make_unique<BPlusTree<3>>("object_key_value");
-    key_value_object = make_unique<BPlusTree<3>>("key_value_object");
+    node_key_value = make_unique<BPlusTree<3>>("node_key_value");
+    key_value_node = make_unique<BPlusTree<3>>("key_value_node");
 
-    from_to_type_edge = make_unique<BPlusTree<4>>("from_to_type_edge");
-    to_type_from_edge = make_unique<BPlusTree<4>>("to_type_from_edge");
-    type_from_to_edge = make_unique<BPlusTree<4>>("type_from_to_edge");
-    type_to_from_edge = make_unique<BPlusTree<4>>("type_to_from_edge");
-    edge_from_to_type = make_unique<BPlusTree<4>>("edge_from_to_type");
+    edge_key_value = make_unique<BPlusTree<3>>("edge_key_value");
+    key_value_edge = make_unique<BPlusTree<3>>("key_value_edge");
+
+    from_to_label_edge = make_unique<BPlusTree<4>>("from_to_label_edge");
+    to_label_from_edge = make_unique<BPlusTree<4>>("to_label_from_edge");
+    label_from_to_edge = make_unique<BPlusTree<4>>("label_from_to_edge");
+    label_to_from_edge = make_unique<BPlusTree<4>>("label_to_from_edge");
+    edge_from_to_label = make_unique<BPlusTree<4>>("edge_from_to_label");
 
     equal_from_to = make_unique<BPlusTree<3>>("equal_from_to");
-    equal_to_type = make_unique<BPlusTree<3>>("equal_to_type");
-    equal_from_type = make_unique<BPlusTree<3>>("equal_from_type");
-    equal_from_to_type = make_unique<BPlusTree<2>>("equal_from_to_type");
-
-    equal_from_to_inverted = make_unique<BPlusTree<3>>("equal_from_to_inverted");
-    equal_to_type_inverted = make_unique<BPlusTree<3>>("equal_to_type_inverted");
-    equal_from_type_inverted = make_unique<BPlusTree<3>>("equal_from_type_inverted");
+    equal_from_to_inv = make_unique<BPlusTree<3>>("equal_from_to_inverted");
 }

@@ -22,8 +22,7 @@ void print_path_edge(std::ostream& os, ObjectId edge_id, bool inverse);
 ObjectId pack_edge_label(const std::string& label);
 ObjectId pack_node_label(const std::string& label);
 
-ObjectId pack_node_property(const std::string& key);
-ObjectId pack_edge_property(const std::string& key);
+ObjectId pack_property(const std::string& key);
 
 void print_path(std::ostream& os, ObjectId oid);
 ObjectId pack_path(const std::vector<ObjectId>& oid_list);

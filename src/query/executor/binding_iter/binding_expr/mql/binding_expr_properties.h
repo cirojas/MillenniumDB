@@ -17,14 +17,16 @@ public:
     {
         const ObjectId oid = expr->eval(binding);
 
-        const auto sub_t = oid.subtype();
-        if (sub_t != ObjectSubType::NamedNode && sub_t != ObjectSubType::Edge) {
-            return ObjectId::get_null();
-        }
-
         bool interruption = false;
-        auto it = quad_model.object_key_value
-                      ->get_range(&interruption, { oid.id, 0, 0 }, { oid.id, UINT64_MAX, UINT64_MAX });
+
+        BptIter<3> it;
+        if (oid.type() == ObjectType::DirectedEdge) {
+            it = quad_model.edge_key_value
+                     ->get_range(&interruption, { oid.id, 0, 0 }, { oid.id, UINT64_MAX, UINT64_MAX });
+        } else {
+            it = quad_model.node_key_value
+                     ->get_range(&interruption, { oid.id, 0, 0 }, { oid.id, UINT64_MAX, UINT64_MAX });
+        }
 
         auto record = it.next();
         std::map<ObjectId, std::unique_ptr<DictionaryItem>> properties_map;

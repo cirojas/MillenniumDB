@@ -1,71 +1,73 @@
 #pragma once
 
-#include "query/parser/expr/gql/expr_addition.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_and.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_concat.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_division.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_equals.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_greater.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_greater_or_equals.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_has_edge_label.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_has_node_label.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_wildcard_label.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_is.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_less.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_less_or_equals.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_multiplication.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_not.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_not_equals.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_or.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_property.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_subtraction.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_term.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_var.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_xor.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_abs.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_modulo.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_sin.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_cos.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_tan.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_cot.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_sinh.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_cosh.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_tanh.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_asin.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_acos.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_atan.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_degrees.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_radians.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_log.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_log10.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_ln.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_exp.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_power.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_sqrt.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_floor.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_ceil.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_length.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_substr.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_fold.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_singletrim.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_multitrim.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_normalize.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_nullif.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_coalesce.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_simplecase.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_searchedcase.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_cast.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_labels.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_properties.h" // IWYU pragma: export
-#include "query/parser/expr/gql/expr_in.h" // IWYU pragma: export
-#include "query/parser/expr/gql/agg/expr_agg_count_all.h" // IWYU pragma: export
-#include "query/parser/expr/gql/agg/expr_agg_count.h" // IWYU pragma: export
-#include "query/parser/expr/gql/agg/expr_agg_avg.h" // IWYU pragma: export
-#include "query/parser/expr/gql/agg/expr_agg_max.h" // IWYU pragma: export
-#include "query/parser/expr/gql/agg/expr_agg_min.h" // IWYU pragma: export
-#include "query/parser/expr/gql/agg/expr_agg_sum.h" // IWYU pragma: export
-#include "query/parser/expr/gql/agg/expr_agg_stddev_pop.h" // IWYU pragma: export
-#include "query/parser/expr/gql/agg/expr_agg_stddev_samp.h" // IWYU pragma: export
-#include "query/parser/expr/gql/agg/expr_agg_collect.h" // IWYU pragma: export
-#include "query/parser/expr/gql/agg/expr_agg_percentile_cont.h" // IWYU pragma: export
-#include "query/parser/expr/gql/agg/expr_agg_percentile_disc.h" // IWYU pragma: export
+// IWYU pragma: begin_exports
+#include "query/parser/expr/gql/agg/expr_agg_avg.h"
+#include "query/parser/expr/gql/agg/expr_agg_collect.h"
+#include "query/parser/expr/gql/agg/expr_agg_count.h"
+#include "query/parser/expr/gql/agg/expr_agg_count_all.h"
+#include "query/parser/expr/gql/agg/expr_agg_max.h"
+#include "query/parser/expr/gql/agg/expr_agg_min.h"
+#include "query/parser/expr/gql/agg/expr_agg_percentile_cont.h"
+#include "query/parser/expr/gql/agg/expr_agg_percentile_disc.h"
+#include "query/parser/expr/gql/agg/expr_agg_stddev_pop.h"
+#include "query/parser/expr/gql/agg/expr_agg_stddev_samp.h"
+#include "query/parser/expr/gql/agg/expr_agg_sum.h"
+#include "query/parser/expr/gql/expr_abs.h"
+#include "query/parser/expr/gql/expr_acos.h"
+#include "query/parser/expr/gql/expr_addition.h"
+#include "query/parser/expr/gql/expr_and.h"
+#include "query/parser/expr/gql/expr_asin.h"
+#include "query/parser/expr/gql/expr_atan.h"
+#include "query/parser/expr/gql/expr_cast.h"
+#include "query/parser/expr/gql/expr_ceil.h"
+#include "query/parser/expr/gql/expr_coalesce.h"
+#include "query/parser/expr/gql/expr_concat.h"
+#include "query/parser/expr/gql/expr_cos.h"
+#include "query/parser/expr/gql/expr_cosh.h"
+#include "query/parser/expr/gql/expr_cot.h"
+#include "query/parser/expr/gql/expr_degrees.h"
+#include "query/parser/expr/gql/expr_division.h"
+#include "query/parser/expr/gql/expr_equals.h"
+#include "query/parser/expr/gql/expr_exp.h"
+#include "query/parser/expr/gql/expr_floor.h"
+#include "query/parser/expr/gql/expr_fold.h"
+#include "query/parser/expr/gql/expr_greater.h"
+#include "query/parser/expr/gql/expr_greater_or_equals.h"
+#include "query/parser/expr/gql/expr_has_edge_label.h"
+#include "query/parser/expr/gql/expr_has_node_label.h"
+#include "query/parser/expr/gql/expr_in.h"
+#include "query/parser/expr/gql/expr_is.h"
+#include "query/parser/expr/gql/expr_labels.h"
+#include "query/parser/expr/gql/expr_length.h"
+#include "query/parser/expr/gql/expr_less.h"
+#include "query/parser/expr/gql/expr_less_or_equals.h"
+#include "query/parser/expr/gql/expr_ln.h"
+#include "query/parser/expr/gql/expr_log.h"
+#include "query/parser/expr/gql/expr_log10.h"
+#include "query/parser/expr/gql/expr_modulo.h"
+#include "query/parser/expr/gql/expr_multiplication.h"
+#include "query/parser/expr/gql/expr_multitrim.h"
+#include "query/parser/expr/gql/expr_normalize.h"
+#include "query/parser/expr/gql/expr_not.h"
+#include "query/parser/expr/gql/expr_not_equals.h"
+#include "query/parser/expr/gql/expr_nullif.h"
+#include "query/parser/expr/gql/expr_or.h"
+#include "query/parser/expr/gql/expr_power.h"
+#include "query/parser/expr/gql/expr_properties.h"
+#include "query/parser/expr/gql/expr_property.h"
+#include "query/parser/expr/gql/expr_radians.h"
+#include "query/parser/expr/gql/expr_searchedcase.h"
+#include "query/parser/expr/gql/expr_simplecase.h"
+#include "query/parser/expr/gql/expr_sin.h"
+#include "query/parser/expr/gql/expr_singletrim.h"
+#include "query/parser/expr/gql/expr_sinh.h"
+#include "query/parser/expr/gql/expr_sqrt.h"
+#include "query/parser/expr/gql/expr_substr.h"
+#include "query/parser/expr/gql/expr_subtraction.h"
+#include "query/parser/expr/gql/expr_tan.h"
+#include "query/parser/expr/gql/expr_tanh.h"
+#include "query/parser/expr/gql/expr_term.h"
+#include "query/parser/expr/gql/expr_var.h"
+#include "query/parser/expr/gql/expr_wildcard_label.h"
+#include "query/parser/expr/gql/expr_xor.h"
+// IWYU pragma: end_exports

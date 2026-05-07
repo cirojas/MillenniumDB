@@ -12,7 +12,8 @@ namespace MQL {
 // and adds that to the corresponding graph patterns that have ?x as a Property
 class PushWhereProperties : public OpVisitor {
 public:
-    std::vector<Property> props_to_push;
+    std::vector<Property> node_props_to_push;
+    std::vector<Property> edge_props_to_push;
 
     void visit(OpBasicGraphPattern&) override;
     void visit(OpCall&) override { }
@@ -35,11 +36,17 @@ class PushWherePropertiesExpr : public ExprVisitor {
 public:
     std::unique_ptr<Expr>* current_parent;
 
-    std::vector<Property>& props_to_push;
+    std::vector<Property>& node_props_to_push;
+    std::vector<Property>& edge_props_to_push;
 
-    PushWherePropertiesExpr(std::unique_ptr<Expr>& e, std::vector<Property>& props_to_push) :
+    PushWherePropertiesExpr(
+        std::unique_ptr<Expr>& e,
+        std::vector<Property>& node_props_to_push,
+        std::vector<Property>& edge_props_to_push
+    ) :
         current_parent(&e),
-        props_to_push(props_to_push)
+        node_props_to_push(node_props_to_push),
+        edge_props_to_push(edge_props_to_push)
     { }
 
     void visit(ExprAnd&) override;
@@ -72,7 +79,6 @@ public:
     void visit(ExprNormalize&) override { }
     void visit(ExprStr&) override { }
     void visit(ExprLabels&) override { }
-    void visit(ExprType&) override { }
     void visit(ExprProperties&) override { }
 
     void visit(ExprAggAvg&) override { }

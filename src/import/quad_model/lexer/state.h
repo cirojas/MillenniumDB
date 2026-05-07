@@ -24,30 +24,27 @@ enum State {
     // A key property and the ':' were read in a node line, we expect the value
     EXPECT_NODE_PROP_VALUE = 6,
 
-    // "@+" was read, we know it's a edge line. We expect a direction ("->" or "<-")
-    IMPLICIT_EDGE = 7,
-
     // "->" or "<-" were read, we know we are in an edge and we expect the second id
-    EXPECT_EDGE_SECOND = 8,
+    EXPECT_EDGE_SECOND = 7,
 
-    // something like "ID1->ID2" was read, and we expect the colon preceding the edge type
-    EXPECT_EDGE_TYPE_COLON = 9,
+    // something like "ID1->ID2" was read, and we expect the colon preceding the edge label
+    EXPECT_EDGE_LABEL_COLON = 8,
 
-    // something like "ID1->ID2 :" was read, and we expect the edge type
-    EXPECT_EDGE_TYPE = 10,
+    // something like "ID1->ID2 :" was read, and we expect the edge label
+    EXPECT_EDGE_LABEL = 9,
 
     // We are in a edge line, it might follow a property or a line terminator.
-    EDGE_DEFINED = 11,
+    EDGE_DEFINED = 10,
 
     // A key property were read in an edge line, we expect the ':'
-    EXPECT_EDGE_PROP_COLON = 12,
+    EXPECT_EDGE_PROP_COLON = 11,
 
     // A key property and the ':' were read in an edge line, we expect the value
-    EXPECT_EDGE_PROP_VALUE = 13,
+    EXPECT_EDGE_PROP_VALUE = 12,
 
-    EXPECT_NODE_LIST_ELEMENT = 14,
-    EXPECT_EDGE_LIST_ELEMENT = 15,
+    EXPECT_NODE_LIST_ELEMENT = 13,
+    EXPECT_EDGE_LIST_ELEMENT = 14,
 
-    TOTAL_STATES = 16
+    TOTAL_STATES = 15
 };
 }} // namespace Import::QuadModel

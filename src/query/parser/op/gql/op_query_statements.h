@@ -1,6 +1,10 @@
 #pragma once
 
+#include "query/exceptions.h"
 #include "query/parser/op/gql/op.h"
+#include "query/query_context.h"
+
+#include <vector>
 
 namespace GQL {
 

@@ -4,16 +4,16 @@
 
 class EdgePlan : public Plan {
 public:
-    EdgePlan(Id from, Id to, Id type, Id edge);
+    EdgePlan(Id from, Id to, Id label, Id edge);
 
     EdgePlan(const EdgePlan& other) :
         from(other.from),
         to(other.to),
-        type(other.type),
+        label(other.label),
         edge(other.edge),
         from_assigned(other.from_assigned),
         to_assigned(other.to_assigned),
-        type_assigned(other.type_assigned),
+        label_assigned(other.label_assigned),
         edge_assigned(other.edge_assigned)
     { }
 
@@ -46,11 +46,11 @@ public:
 private:
     Id from;
     Id to;
-    Id type;
+    Id label;
     Id edge;
 
     bool from_assigned;
     bool to_assigned;
-    bool type_assigned;
+    bool label_assigned;
     bool edge_assigned;
 };

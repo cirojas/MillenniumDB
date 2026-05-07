@@ -2,6 +2,8 @@
 
 #include "query/parser/op/gql/op.h"
 
+#include <optional>
+
 namespace GQL {
 
 class OpRepetition : public Op {

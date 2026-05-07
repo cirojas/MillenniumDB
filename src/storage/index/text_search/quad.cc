@@ -1,11 +1,10 @@
 #include "quad.h"
 
-#include <unordered_set>
-
 #include "graph_models/quad_model/conversions.h"
-#include "query/optimizer/quad_model/plan/property_plan.h"
 #include "query/query_context.h"
 #include "storage/index/text_search/utils.h"
+
+#include <unordered_set>
 
 namespace TextSearch { namespace Quad {
 
@@ -18,30 +17,30 @@ std::tuple<uint_fast32_t, uint_fast32_t, ObjectId> index_predicate(
     const std::string& predicate
 )
 {
-    const auto object_var = get_query_ctx().get_internal_var();
-    const auto key_oid = Common::Conversions::pack_string(predicate);
-    const auto value_var = get_query_ctx().get_internal_var();
+    // const auto object_var = get_query_ctx().get_internal_var();
+    // const auto key_oid = Common::Conversions::pack_string(predicate); // TODO: mal
+    // const auto value_var = get_query_ctx().get_internal_var();
 
-    const auto property_plan = PropertyPlan(object_var, key_oid, value_var);
-    auto property_plan_iter = property_plan.get_binding_iter();
+    // const auto property_plan = PropertyPlan(object_var, key_oid, value_var);
+    // auto property_plan_iter = property_plan.get_binding_iter();
 
-    Binding property_plan_binding(get_query_ctx().get_var_size());
-    property_plan_iter->begin(property_plan_binding);
+    // Binding property_plan_binding(get_query_ctx().get_var_size());
+    // property_plan_iter->begin(property_plan_binding);
 
-    uint_fast32_t total_inserted_elements { 0 };
-    uint_fast32_t total_inserted_tokens { 0 };
-    while (property_plan_iter->next()) {
-        const auto object_oid = property_plan_binding[object_var];
-        const auto value_oid = property_plan_binding[value_var];
-        const auto
-            inserted_tokens = index_single(trie, bpt, table, tokenize, normalize, object_oid, value_oid);
-        if (inserted_tokens > 0) {
-            ++total_inserted_elements;
-            total_inserted_tokens += inserted_tokens;
-        }
-    }
+    // uint_fast32_t total_inserted_elements { 0 };
+    // uint_fast32_t total_inserted_tokens { 0 };
+    // while (property_plan_iter->next()) {
+    //     const auto object_oid = property_plan_binding[object_var];
+    //     const auto value_oid = property_plan_binding[value_var];
+    //     const auto
+    //         inserted_tokens = index_single(trie, bpt, table, tokenize, normalize, object_oid, value_oid);
+    //     if (inserted_tokens > 0) {
+    //         ++total_inserted_elements;
+    //         total_inserted_tokens += inserted_tokens;
+    //     }
+    // }
 
-    return { total_inserted_elements, total_inserted_tokens, key_oid };
+    // return { total_inserted_elements, total_inserted_tokens, key_oid };
 }
 
 uint_fast32_t index_single(

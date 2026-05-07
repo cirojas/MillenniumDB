@@ -16,15 +16,17 @@
 #include "query/optimizer/plan/join_order/selinger_optimizer.h"
 #include "query/optimizer/quad_model/expr_property_types_visitor.h"
 #include "query/optimizer/quad_model/expr_to_binding_expr.h"
-#include "query/optimizer/quad_model/plan/disjoint_object_plan.h"
+#include "query/optimizer/quad_model/plan/disjoint_node_plan.h"
 #include "query/optimizer/quad_model/plan/edge_plan.h"
-#include "query/optimizer/quad_model/plan/label_plan.h"
+#include "query/optimizer/quad_model/plan/edge_property_plan.h"
+#include "query/optimizer/quad_model/plan/node_label_plan.h"
+#include "query/optimizer/quad_model/plan/node_property_plan.h"
 #include "query/optimizer/quad_model/plan/path_plan.h"
-#include "query/optimizer/quad_model/plan/property_plan.h"
 #include "query/parser/expr/mql/exprs.h"
 #include "query/parser/op/mql/op_visitor.h"
 #include "query/parser/op/mql/op_where.h"
 #include "query/parser/op/mql/ops.h"
+#include "query/update/mql/update_action/insert_property_expr.h"
 
 using namespace MQL;
 
@@ -74,35 +76,39 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
     std::vector<std::unique_ptr<Plan>> base_plans;
 
     // Process Labels
-    for (auto& label : op_basic_graph_pattern.labels) {
-        base_plans.push_back(std::make_unique<LabelPlan>(label.node, label.label));
+    for (auto& node_label : op_basic_graph_pattern.node_labels) {
+        base_plans.push_back(std::make_unique<NodeLabelPlan>(node_label.node, node_label.label));
     }
 
-    // Process properties (value is fixed)
-    for (auto& property : op_basic_graph_pattern.properties) {
-        base_plans.push_back(
-            std::make_unique<PropertyPlan>(property.obj, property.key, property.value)
-        );
+    // Process node properties (value is fixed)
+    for (auto& property : op_basic_graph_pattern.node_properties) {
+        base_plans.push_back(std::make_unique<NodePropertyPlan>(property.obj, property.key, property.value));
+    }
+
+    // Process edge properties (value is fixed)
+    for (auto& property : op_basic_graph_pattern.edge_properties) {
+        base_plans.push_back(std::make_unique<EdgePropertyPlan>(property.obj, property.key, property.value));
     }
 
     // Process connections
     for (auto& edge : op_basic_graph_pattern.edges) {
-        base_plans.push_back(std::make_unique<EdgePlan>(edge.from, edge.to, edge.type, edge.edge)
-        );
+        base_plans.push_back(std::make_unique<EdgePlan>(edge.from, edge.to, edge.label, edge.edge));
     }
 
     // Process property paths
     for (auto& path : op_basic_graph_pattern.paths) {
-        base_plans.push_back(std::make_unique<PathPlan>(
-            begin_at_left,
-            path.direction,
-            path.var,
-            path.from,
-            path.to,
-            *path.path,
-            path.semantic,
-            path.K
-        ));
+        base_plans.push_back(
+            std::make_unique<PathPlan>(
+                begin_at_left,
+                path.direction,
+                path.var,
+                path.from,
+                path.to,
+                *path.path,
+                path.semantic,
+                path.K
+            )
+        );
     }
 
     std::set<VarId> join_vars;
@@ -126,7 +132,7 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
         bool join_with_where_property_equality = false;
 
         if (!join_with_where_property_equality) {
-            base_plans.push_back(std::make_unique<DisjointObjectPlan>(disjoint_var.var));
+            base_plans.push_back(std::make_unique<DisjointNodePlan>(disjoint_var.var));
         }
     }
 
@@ -432,9 +438,7 @@ void BindingIterConstructor::make_solution_modifiers()
 
     if (op_having) {
         std::vector<std::unique_ptr<BindingExpr>> exprs;
-        exprs.push_back(
-            std::make_unique<BindingExprVar>(having_var)
-        );
+        exprs.push_back(std::make_unique<BindingExprVar>(having_var));
         tmp = std::make_unique<Filter>(&Conversions::to_boolean, std::move(tmp), std::move(exprs));
     }
 
@@ -488,7 +492,10 @@ void BindingIterConstructor::visit(OpReturn& op_return)
                 false
             );
             if (casted->var_with_property != var) {
-                projection_order_exprs.emplace_back(var, std::make_unique<BindingExprVar>(casted->var_with_property));
+                projection_order_exprs.emplace_back(
+                    var,
+                    std::make_unique<BindingExprVar>(casted->var_with_property)
+                );
             }
         } else {
             ExprToBindingExpr expr_to_binding_expr(this, var, true);
@@ -571,7 +578,7 @@ bool BindingIterConstructor::term_exists(ObjectId term) const
     } else if (term.type() == ObjectType::DirectedEdge) {
         Record<4> max = { term.id, 0, 0, 0 };
         Record<4> min = { term.id, UINT64_MAX, UINT64_MAX, UINT64_MAX };
-        auto it = quad_model.edge_from_to_type->get_range(&interruption_requested, min, max);
+        auto it = quad_model.edge_from_to_label->get_range(&interruption_requested, min, max);
         return it.next() != nullptr;
     } else {
         // search in nodes

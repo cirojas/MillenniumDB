@@ -16,6 +16,7 @@ enum class ObjectType : uint8_t {
     NamedNodeInl      = 0x20, // 0b001000'00
     NamedNodeExt      = 0x21, // 0b001000'01
     NamedNodeTmp      = 0x22, // 0b001000'10
+    NamedNodeHexInl   = 0x24, // 0b001001'00
     NamedNodeHexExt   = 0x25, // 0b001001'01
     NamedNodeHexTmp   = 0x26, // 0b001001'10
     NamedNodeUuidExt  = 0x29, // 0b001010'01
@@ -59,8 +60,7 @@ enum class ObjectType : uint8_t {
     UndirectedEdge    = 0x84, // 0b100001'00
     NodeLabel         = 0x88, // 0b100010'00
     EdgeLabel         = 0x8C, // 0b100011'00
-    NodeKey           = 0x90, // 0b100100'00
-    EdgeKey           = 0x94, // 0b100101'00
+    PropertyKey       = 0x90, // 0b100100'00
     Direction         = 0x98, // 0b100110'00
     Path              = 0x9C, // 0b100111'00
 
@@ -103,7 +103,7 @@ enum class ObjectSubType {
     Bool,
     Edge,
     Path,
-    PGMetaData, // EdgeKey, EdgeLabel, NodeKey, NodeLabel, Direction
+    PGMetaData, // Key, EdgeLabel, NodeLabel, Direction
     TensorFloat,
     TensorDouble,
     List,
@@ -122,7 +122,7 @@ enum class ObjectGenType {
     Bool,
     Edge,
     Path,
-    PGMetaData, // EdgeKey, EdgeLabel, NodeKey, NodeLabel, Direction
+    PGMetaData, // Key, EdgeLabel, NodeLabel, Direction
     Tensor,
     List,
     Dict,
@@ -166,6 +166,7 @@ public:
     static constexpr uint64_t MASK_NAMED_NODE_INL       = uint64_t(ObjectType::NamedNodeInl) << 56;
     static constexpr uint64_t MASK_NAMED_NODE_EXT       = uint64_t(ObjectType::NamedNodeExt) << 56;
     static constexpr uint64_t MASK_NAMED_NODE_TMP       = uint64_t(ObjectType::NamedNodeTmp) << 56;
+    static constexpr uint64_t MASK_NAMED_NODE_HEX_INL   = uint64_t(ObjectType::NamedNodeHexInl) << 56;
     static constexpr uint64_t MASK_NAMED_NODE_HEX_EXT   = uint64_t(ObjectType::NamedNodeHexExt) << 56;
     static constexpr uint64_t MASK_NAMED_NODE_HEX_TMP   = uint64_t(ObjectType::NamedNodeHexTmp) << 56;
     static constexpr uint64_t MASK_NAMED_NODE_UUID_EXT  = uint64_t(ObjectType::NamedNodeUuidExt) << 56;
@@ -202,8 +203,7 @@ public:
     static constexpr uint64_t MASK_UNDIRECTED_EDGE      = uint64_t(ObjectType::UndirectedEdge) << 56;
     static constexpr uint64_t MASK_NODE_LABEL           = uint64_t(ObjectType::NodeLabel) << 56;
     static constexpr uint64_t MASK_EDGE_LABEL           = uint64_t(ObjectType::EdgeLabel) << 56;
-    static constexpr uint64_t MASK_NODE_KEY             = uint64_t(ObjectType::NodeKey) << 56;
-    static constexpr uint64_t MASK_EDGE_KEY             = uint64_t(ObjectType::EdgeKey) << 56;
+    static constexpr uint64_t MASK_PROPERTY_KEY         = uint64_t(ObjectType::PropertyKey) << 56;
     static constexpr uint64_t MASK_DIRECTION            = uint64_t(ObjectType::Direction) << 56;
     static constexpr uint64_t MASK_PATH                 = uint64_t(ObjectType::Path) << 56;
     static constexpr uint64_t MASK_IRI_UUID_LOWER_EXT   = uint64_t(ObjectType::IriUuidLowerExt) << 56;
@@ -278,6 +278,7 @@ public:
         case ObjectType::NamedNodeInl:
         case ObjectType::NamedNodeExt:
         case ObjectType::NamedNodeTmp:
+        case ObjectType::NamedNodeHexInl:
         case ObjectType::NamedNodeHexExt:
         case ObjectType::NamedNodeHexTmp:
         case ObjectType::NamedNodeUuidExt:
@@ -321,8 +322,7 @@ public:
             return ObjectGenType::Edge;
         case ObjectType::NodeLabel:
         case ObjectType::EdgeLabel:
-        case ObjectType::NodeKey:
-        case ObjectType::EdgeKey:
+        case ObjectType::PropertyKey:
         case ObjectType::Direction:
             return ObjectGenType::PGMetaData;
         case ObjectType::Path:
@@ -364,6 +364,7 @@ public:
         case ObjectType::NamedNodeInl:
         case ObjectType::NamedNodeExt:
         case ObjectType::NamedNodeTmp:
+        case ObjectType::NamedNodeHexInl:
         case ObjectType::NamedNodeHexExt:
         case ObjectType::NamedNodeHexTmp:
         case ObjectType::NamedNodeUuidExt:
@@ -413,8 +414,7 @@ public:
             return ObjectSubType::Edge;
         case ObjectType::NodeLabel:
         case ObjectType::EdgeLabel:
-        case ObjectType::NodeKey:
-        case ObjectType::EdgeKey:
+        case ObjectType::PropertyKey:
         case ObjectType::Direction:
             return ObjectSubType::PGMetaData;
         case ObjectType::Path:

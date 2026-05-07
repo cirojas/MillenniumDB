@@ -1,14 +1,14 @@
 #pragma once
 
-#include <queue>
-
-#include <boost/unordered/unordered_node_set.hpp>
-
 #include "graph_models/object_id.h"
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/any_walks/search_state.h"
 #include "query/parser/paths/automaton/rdpq_automaton.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
+
+#include <queue>
+
+#include <boost/unordered/unordered_node_set.hpp>
 
 namespace Paths { namespace Any {
 
@@ -55,10 +55,11 @@ public:
         automaton(automaton)
     { }
 
-    // Evaluate data checks for a specific node
+    // Evaluate data checks for a specific node or edge
     bool eval_data_check(
         uint64_t node,
-        std::vector<std::tuple<Operators, ObjectId, ObjectId>>& property_checks
+        std::vector<std::tuple<Operators, ObjectId, ObjectId>>& property_checks,
+        bool is_node // else is edge
     );
 
     void print(std::ostream& os, int indent, bool stats) const override;

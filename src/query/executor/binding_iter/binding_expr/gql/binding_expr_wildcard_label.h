@@ -5,7 +5,6 @@
 #include "graph_models/object_id.h"
 #include "query/executor/binding.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
-#include "query/query_context.h"
 #include "query/rewriter/gql/op/var_type.h"
 #include "query/var_id.h"
 #include "storage/index/bplus_tree/bplus_tree.h"

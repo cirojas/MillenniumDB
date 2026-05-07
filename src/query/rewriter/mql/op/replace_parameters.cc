@@ -3,29 +3,37 @@
 #include "query/exceptions.h"
 #include "query/parser/expr/mql/exprs.h"
 #include "query/parser/op/mql/ops.h"
+#include "query/query_context.h"
+#include "query/update/mql/update_action/update_actions.h"
 
 using namespace MQL;
 
 void ReplaceParameters::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 {
     std::set<Label> new_labels;
-    for (const auto& label : op_basic_graph_pattern.labels) {
+    for (const auto& label : op_basic_graph_pattern.node_labels) {
         new_labels.emplace(var_to_parameter(label.node), label.label);
     }
-    op_basic_graph_pattern.labels = std::move(new_labels);
+    op_basic_graph_pattern.node_labels = std::move(new_labels);
 
-    std::set<Property> new_properties;
-    for (const auto& property : op_basic_graph_pattern.properties) {
-        new_properties.emplace(var_to_parameter(property.obj), property.key, property.value);
+    std::set<Property> new_node_properties;
+    for (const auto& property : op_basic_graph_pattern.node_properties) {
+        new_node_properties.emplace(var_to_parameter(property.obj), property.key, property.value);
     }
-    op_basic_graph_pattern.properties = std::move(new_properties);
+    op_basic_graph_pattern.node_properties = std::move(new_node_properties);
+
+    std::set<Property> new_edge_properties;
+    for (const auto& property : op_basic_graph_pattern.edge_properties) {
+        new_edge_properties.emplace(var_to_parameter(property.obj), property.key, property.value);
+    }
+    op_basic_graph_pattern.edge_properties = std::move(new_edge_properties);
 
     std::set<Edge> new_edges;
     for (const auto& edge : op_basic_graph_pattern.edges) {
         new_edges.emplace(
             var_to_parameter(edge.from),
             var_to_parameter(edge.to),
-            var_to_parameter(edge.type),
+            var_to_parameter(edge.label),
             var_to_parameter(edge.edge)
         );
     }
@@ -386,11 +394,6 @@ void ReplaceParametersExpr::visit(ExprLabels& expr)
     visit_or_replace_parameter(expr.expr);
 }
 
-void ReplaceParametersExpr::visit(ExprType& expr)
-{
-    visit_or_replace_parameter(expr.expr);
-}
-
 void ReplaceParametersExpr::visit(ExprProperties& expr)
 {
     visit_or_replace_parameter(expr.expr);
@@ -442,12 +445,12 @@ void ReplaceParametersUpdateAction::visit(InsertNode& insert_node)
     insert_node.node = var_to_parameter(insert_node.node);
 }
 
-void ReplaceParametersUpdateAction::visit(InsertLabel& insert_label)
+void ReplaceParametersUpdateAction::visit(InsertNodeLabel& insert_label)
 {
     insert_label.node = var_to_parameter(insert_label.node);
 }
 
-void ReplaceParametersUpdateAction::visit(SetLabelOrType& set_label_or_type)
+void ReplaceParametersUpdateAction::visit(SetLabel& set_label_or_type)
 {
     set_label_or_type.obj = var_to_parameter(set_label_or_type.obj);
 }
@@ -471,7 +474,7 @@ void ReplaceParametersUpdateAction::visit(DeleteProperty& delete_property)
     delete_property.obj = var_to_parameter(delete_property.obj);
 }
 
-void ReplaceParametersUpdateAction::visit(DeleteLabel& delete_label)
+void ReplaceParametersUpdateAction::visit(DeleteNodeLabel& delete_label)
 {
     delete_label.node = var_to_parameter(delete_label.node);
 }

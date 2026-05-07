@@ -2,6 +2,7 @@
 
 #include "graph_models/rdf_model/rdf_catalog.h"
 #include "graph_models/rdf_model/rdf_model.h"
+#include "query/query_context.h"
 #include "storage/index/text_search/text_index_manager.h"
 
 #include <stdexcept>

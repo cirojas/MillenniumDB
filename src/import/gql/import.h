@@ -209,9 +209,7 @@ private:
 
     uint64_t get_edge_label_id(const std::string& label);
 
-    uint64_t get_node_key_id();
-
-    uint64_t get_edge_key_id();
+    uint64_t get_property_key_id();
 
     // sets edge_id and push into undirected_edges or directed_edges
     void save_edge();

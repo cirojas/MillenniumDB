@@ -26,9 +26,8 @@ void ExecutorConstructor::visit(OpDescribe& op_describe)
     VarId label_var(0);
     VarId key_var(0);
     VarId value_var(1);
-    VarId from_var(0);
-    VarId to_var(0);
-    VarId type_var(1);
+    VarId from_var(1);
+    VarId to_var(1);
     VarId edge_var(2);
 
     {
@@ -43,17 +42,19 @@ void ExecutorConstructor::visit(OpDescribe& op_describe)
         ranges[0] = std::make_unique<Term>(object_id);
         ranges[1] = std::make_unique<UnassignedVar>(key_var);
         ranges[2] = std::make_unique<UnassignedVar>(value_var);
-        properties = std::make_unique<IndexScan<3>>(*quad_model.object_key_value, std::move(ranges));
+        BPlusTree<3>& bpt = object_id.type() == ObjectType::DirectedEdge ? *quad_model.edge_key_value
+                                                                         : *quad_model.node_key_value;
+        properties = std::make_unique<IndexScan<3>>(bpt, std::move(ranges));
     }
 
     {
         std::array<std::unique_ptr<ScanRange>, 4> ranges;
         ranges[0] = std::make_unique<Term>(object_id);
         ranges[1] = std::make_unique<UnassignedVar>(to_var);
-        ranges[2] = std::make_unique<UnassignedVar>(type_var);
+        ranges[2] = std::make_unique<UnassignedVar>(label_var);
         ranges[3] = std::make_unique<UnassignedVar>(edge_var);
         outgoing_connections = std::make_unique<IndexScan<4>>(
-            *quad_model.from_to_type_edge,
+            *quad_model.from_to_label_edge,
             std::move(ranges)
         );
     }
@@ -61,11 +62,11 @@ void ExecutorConstructor::visit(OpDescribe& op_describe)
     {
         std::array<std::unique_ptr<ScanRange>, 4> ranges;
         ranges[0] = std::make_unique<Term>(object_id);
-        ranges[1] = std::make_unique<UnassignedVar>(type_var);
+        ranges[1] = std::make_unique<UnassignedVar>(label_var);
         ranges[2] = std::make_unique<UnassignedVar>(from_var);
         ranges[3] = std::make_unique<UnassignedVar>(edge_var);
         incoming_connections = std::make_unique<IndexScan<4>>(
-            *quad_model.to_type_from_edge,
+            *quad_model.to_label_from_edge,
             std::move(ranges)
         );
     }

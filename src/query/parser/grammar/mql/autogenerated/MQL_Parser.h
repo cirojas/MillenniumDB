@@ -27,15 +27,15 @@ public:
     K_STRING = 60, K_STR = 61, K_TEXT_SEARCH = 62, K_TYPE = 63, K_REGEX = 64, 
     K_REMOVE = 65, K_RETURN = 66, K_SET = 67, K_SUM = 68, K_TRUE = 69, K_TRAILS = 70, 
     K_VALUES = 71, K_WALKS = 72, K_WITH = 73, K_WHERE = 74, K_YIELD = 75, 
-    TRUE_PROP = 76, FALSE_PROP = 77, ANON_ID = 78, EDGE_ID = 79, KEY = 80, 
-    TYPE = 81, TYPE_VAR = 82, VARIABLE = 83, STRING = 84, UNSIGNED_INTEGER = 85, 
-    UNSIGNED_FLOAT = 86, UNSIGNED_SCIENTIFIC_NOTATION = 87, NAME = 88, LEQ = 89, 
-    GEQ = 90, EQ = 91, NEQ = 92, LT = 93, GT = 94, SINGLE_EQ = 95, PATH_SEQUENCE = 96, 
-    PATH_ALTERNATIVE = 97, PATH_NEGATION = 98, STAR = 99, PERCENT = 100, 
-    QUESTION_MARK = 101, PLUS = 102, MINUS = 103, L_PAR = 104, R_PAR = 105, 
-    LCURLY_BRACKET = 106, RCURLY_BRACKET = 107, LSQUARE_BRACKET = 108, RSQUARE_BRACKET = 109, 
-    COMMA = 110, COLON = 111, WHITE_SPACE = 112, SINGLE_LINE_COMMENT = 113, 
-    UNRECOGNIZED = 114
+    TRUE_PROP = 76, FALSE_PROP = 77, ANON_ID = 78, EDGE_ID = 79, UUID = 80, 
+    HEX = 81, KEY = 82, LABEL = 83, LABEL_VAR = 84, VARIABLE = 85, STRING = 86, 
+    UNSIGNED_INTEGER = 87, UNSIGNED_FLOAT = 88, UNSIGNED_SCIENTIFIC_NOTATION = 89, 
+    NAME = 90, LEQ = 91, GEQ = 92, EQ = 93, NEQ = 94, LT = 95, GT = 96, 
+    SINGLE_EQ = 97, PATH_SEQUENCE = 98, PATH_ALTERNATIVE = 99, PATH_NEGATION = 100, 
+    STAR = 101, PERCENT = 102, QUESTION_MARK = 103, PLUS = 104, MINUS = 105, 
+    L_PAR = 106, R_PAR = 107, LCURLY_BRACKET = 108, RCURLY_BRACKET = 109, 
+    LSQUARE_BRACKET = 110, RSQUARE_BRACKET = 111, COMMA = 112, COLON = 113, 
+    WHITE_SPACE = 114, SINGLE_LINE_COMMENT = 115, UNRECOGNIZED = 116
   };
 
   enum {
@@ -54,16 +54,16 @@ public:
     RuleGraphPattern = 41, RuleOptionalPattern = 42, RuleBasicPattern = 43, 
     RuleLinearPattern = 44, RulePath = 45, RulePathAlternatives = 46, RulePathSequence = 47, 
     RulePathAtom = 48, RulePathSuffix = 49, RulePathType = 50, RuleNode = 51, 
-    RuleFixedObj = 52, RuleVarNode = 53, RuleEdge = 54, RuleEdgeInside = 55, 
-    RuleProperties = 56, RuleProperty = 57, RuleConditionalOrType = 58, 
-    RuleIdentifier = 59, RuleBoolValue = 60, RuleNumericValue = 61, RuleDatatypeValue = 62, 
-    RuleValue = 63, RuleConditionalOrExpr = 64, RuleConditionalAndExpr = 65, 
-    RuleComparisonExpr = 66, RuleAdditiveExpr = 67, RuleMultiplicativeExpr = 68, 
-    RuleUnaryExpr = 69, RuleAtomicExpr = 70, RuleFunction = 71, RuleRegex = 72, 
-    RuleCosineSimilarity = 73, RuleCosineDistance = 74, RuleManhattanDistance = 75, 
-    RuleEuclideanDistance = 76, RuleEditDistance = 77, RuleNormalize = 78, 
-    RuleStr = 79, RuleLabels = 80, RulePropertiesFunction = 81, RuleType = 82, 
-    RuleTextSearchIndexMode = 83, RuleExprTypename = 84, RuleKeyword = 85
+    RuleFixedNode = 52, RuleFixedObj = 53, RuleVarNode = 54, RuleEdge = 55, 
+    RuleEdgeInside = 56, RuleProperties = 57, RuleProperty = 58, RuleConditionalOrType = 59, 
+    RuleIdentifier = 60, RuleBoolValue = 61, RuleNumericValue = 62, RuleDatatypeValue = 63, 
+    RuleValue = 64, RuleConditionalOrExpr = 65, RuleConditionalAndExpr = 66, 
+    RuleComparisonExpr = 67, RuleAdditiveExpr = 68, RuleMultiplicativeExpr = 69, 
+    RuleUnaryExpr = 70, RuleAtomicExpr = 71, RuleFunction = 72, RuleRegex = 73, 
+    RuleCosineSimilarity = 74, RuleCosineDistance = 75, RuleManhattanDistance = 76, 
+    RuleEuclideanDistance = 77, RuleEditDistance = 78, RuleNormalize = 79, 
+    RuleStr = 80, RuleLabels = 81, RulePropertiesFunction = 82, RuleTextSearchIndexMode = 83, 
+    RuleExprTypename = 84, RuleKeyword = 85
   };
 
   explicit MQL_Parser(antlr4::TokenStream *input);
@@ -135,6 +135,7 @@ public:
   class PathSuffixContext;
   class PathTypeContext;
   class NodeContext;
+  class FixedNodeContext;
   class FixedObjContext;
   class VarNodeContext;
   class EdgeContext;
@@ -165,7 +166,6 @@ public:
   class StrContext;
   class LabelsContext;
   class PropertiesFunctionContext;
-  class TypeContext;
   class TextSearchIndexModeContext;
   class ExprTypenameContext;
   class KeywordContext; 
@@ -243,10 +243,10 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *L_PAR();
     antlr4::tree::TerminalNode *R_PAR();
-    IdentifierContext *identifier();
+    FixedNodeContext *fixedNode();
     antlr4::tree::TerminalNode *VARIABLE();
-    std::vector<antlr4::tree::TerminalNode *> TYPE();
-    antlr4::tree::TerminalNode* TYPE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> LABEL();
+    antlr4::tree::TerminalNode* LABEL(size_t i);
     InsertPropertiesContext *insertProperties();
 
 
@@ -264,7 +264,7 @@ public:
     std::vector<antlr4::tree::TerminalNode *> MINUS();
     antlr4::tree::TerminalNode* MINUS(size_t i);
     antlr4::tree::TerminalNode *LSQUARE_BRACKET();
-    antlr4::tree::TerminalNode *TYPE();
+    antlr4::tree::TerminalNode *LABEL();
     antlr4::tree::TerminalNode *RSQUARE_BRACKET();
     InsertPropertiesContext *insertProperties();
     antlr4::tree::TerminalNode *GT();
@@ -312,7 +312,7 @@ public:
     InsertProperty2Context(InsertPropertyContext *ctx);
 
     IdentifierContext *identifier();
-    antlr4::tree::TerminalNode *TYPE();
+    antlr4::tree::TerminalNode *LABEL();
     antlr4::tree::TerminalNode *L_PAR();
     antlr4::tree::TerminalNode *STRING();
     antlr4::tree::TerminalNode *R_PAR();
@@ -393,8 +393,8 @@ public:
     FixedObjContext *fixedObj();
     antlr4::tree::TerminalNode *VARIABLE();
     InsertPropertiesContext *insertProperties();
-    std::vector<antlr4::tree::TerminalNode *> TYPE();
-    antlr4::tree::TerminalNode* TYPE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> LABEL();
+    antlr4::tree::TerminalNode* LABEL(size_t i);
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -427,8 +427,8 @@ public:
     antlr4::tree::TerminalNode *KEY();
     FixedObjContext *fixedObj();
     antlr4::tree::TerminalNode *VARIABLE();
-    std::vector<antlr4::tree::TerminalNode *> TYPE();
-    antlr4::tree::TerminalNode* TYPE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> LABEL();
+    antlr4::tree::TerminalNode* LABEL(size_t i);
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1055,7 +1055,7 @@ public:
   public:
     PathAtomSimpleContext(PathAtomContext *ctx);
 
-    antlr4::tree::TerminalNode *TYPE();
+    antlr4::tree::TerminalNode *LABEL();
     antlr4::tree::TerminalNode *PATH_NEGATION();
     PathSuffixContext *pathSuffix();
 
@@ -1114,7 +1114,7 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *L_PAR();
     antlr4::tree::TerminalNode *R_PAR();
-    FixedObjContext *fixedObj();
+    FixedNodeContext *fixedNode();
     VarNodeContext *varNode();
 
 
@@ -1124,12 +1124,28 @@ public:
 
   NodeContext* node();
 
+  class  FixedNodeContext : public antlr4::ParserRuleContext {
+  public:
+    FixedNodeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    IdentifierContext *identifier();
+    antlr4::tree::TerminalNode *ANON_ID();
+    antlr4::tree::TerminalNode *UUID();
+    antlr4::tree::TerminalNode *HEX();
+    antlr4::tree::TerminalNode *STRING();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  FixedNodeContext* fixedNode();
+
   class  FixedObjContext : public antlr4::ParserRuleContext {
   public:
     FixedObjContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    IdentifierContext *identifier();
-    antlr4::tree::TerminalNode *ANON_ID();
+    FixedNodeContext *fixedNode();
     antlr4::tree::TerminalNode *EDGE_ID();
 
 
@@ -1144,8 +1160,8 @@ public:
     VarNodeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *VARIABLE();
-    std::vector<antlr4::tree::TerminalNode *> TYPE();
-    antlr4::tree::TerminalNode* TYPE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> LABEL();
+    antlr4::tree::TerminalNode* LABEL(size_t i);
     PropertiesContext *properties();
 
 
@@ -1181,8 +1197,8 @@ public:
     PropertiesContext *properties();
     antlr4::tree::TerminalNode *VARIABLE();
     antlr4::tree::TerminalNode *EDGE_ID();
-    antlr4::tree::TerminalNode *TYPE();
-    antlr4::tree::TerminalNode *TYPE_VAR();
+    antlr4::tree::TerminalNode *LABEL();
+    antlr4::tree::TerminalNode *LABEL_VAR();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1227,7 +1243,7 @@ public:
     Property2Context(PropertyContext *ctx);
 
     IdentifierContext *identifier();
-    antlr4::tree::TerminalNode *TYPE();
+    antlr4::tree::TerminalNode *LABEL();
     antlr4::tree::TerminalNode *L_PAR();
     antlr4::tree::TerminalNode *STRING();
     antlr4::tree::TerminalNode *R_PAR();
@@ -1450,10 +1466,10 @@ public:
 
   class  AdditiveExprContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *s102 = nullptr;
+    antlr4::Token *s104 = nullptr;
     std::vector<antlr4::Token *> op;
-    antlr4::Token *s103 = nullptr;
-    antlr4::Token *_tset1470 = nullptr;
+    antlr4::Token *s105 = nullptr;
+    antlr4::Token *_tset1484 = nullptr;
     AdditiveExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     std::vector<MultiplicativeExprContext *> multiplicativeExpr();
@@ -1472,11 +1488,11 @@ public:
 
   class  MultiplicativeExprContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *s99 = nullptr;
+    antlr4::Token *s101 = nullptr;
     std::vector<antlr4::Token *> op;
-    antlr4::Token *s96 = nullptr;
-    antlr4::Token *s100 = nullptr;
-    antlr4::Token *_tset1493 = nullptr;
+    antlr4::Token *s98 = nullptr;
+    antlr4::Token *s102 = nullptr;
+    antlr4::Token *_tset1507 = nullptr;
     MultiplicativeExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     std::vector<UnaryExprContext *> unaryExpr();
@@ -1616,7 +1632,6 @@ public:
     NormalizeContext *normalize();
     StrContext *str();
     LabelsContext *labels();
-    TypeContext *type();
     PropertiesFunctionContext *propertiesFunction();
 
 
@@ -1798,22 +1813,6 @@ public:
   };
 
   PropertiesFunctionContext* propertiesFunction();
-
-  class  TypeContext : public antlr4::ParserRuleContext {
-  public:
-    TypeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *K_TYPE();
-    antlr4::tree::TerminalNode *L_PAR();
-    ConditionalOrExprContext *conditionalOrExpr();
-    antlr4::tree::TerminalNode *R_PAR();
-
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  TypeContext* type();
 
   class  TextSearchIndexModeContext : public antlr4::ParserRuleContext {
   public:

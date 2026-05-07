@@ -85,6 +85,7 @@ static std::string oid2json_str(uint64_t oid)
     case ObjectGenType::String:
         need_quote = false;
         break;
+    // TODO: think about key and labels
     default:
         need_quote = true;
         break;
@@ -109,7 +110,7 @@ inline void dump_nodes_json(const std::string& path)
     fs << "{";
 
     auto write_properties = [&](uint64_t object_id) -> void {
-        auto object_key_value_it = quad_model.object_key_value->get_range(
+        auto object_key_value_it = quad_model.node_key_value->get_range(
             &interruption_requested,
             { object_id, 0, 0 },
             { object_id, UINT64_MAX, UINT64_MAX }
@@ -117,7 +118,7 @@ inline void dump_nodes_json(const std::string& path)
         auto object_key_value = object_key_value_it.next();
         auto sep_property = "";
         while (object_key_value != nullptr) {
-            fs << sep_property << oid2json_str((*object_key_value)[1]) << ":"
+            fs << sep_property << oid2json_str((*object_key_value)[1]) << ":" // TODO:
                << oid2json_str((*object_key_value)[2]);
             sep_property = ",";
             object_key_value = object_key_value_it.next();
@@ -221,47 +222,47 @@ inline void dump_nodes_json(const std::string& path)
     fs << "\n}\n";
 }
 
-// Dump all the edges with their properties grouped by type in JSON
+// Dump all the edges with their properties grouped by label in JSON
 inline void dump_edges_json(const std::string& path)
 {
     bool interruption_requested = false;
 
     std::fstream fs(path, std::ios::out | std::ios::trunc);
     fs << "{";
-    // Loop over all edges sorted by type
-    auto type_from_to_edge_it = quad_model.type_from_to_edge->get_range(
+    // Loop over all edges sorted by label
+    auto label_from_to_edge_it = quad_model.label_from_to_edge->get_range(
         &interruption_requested,
         { 0, 0, 0 },
         { UINT64_MAX, UINT64_MAX, UINT64_MAX }
     );
-    auto type_from_to_edge = type_from_to_edge_it.next();
-    auto sep_type = "";
-    uint64_t prev_type = ObjectId::NULL_ID;
-    while (type_from_to_edge != nullptr) {
-        if ((*type_from_to_edge)[0] != prev_type) {
-            // Handle first occurrence of type
-            fs << sep_type << oid2json_str((*type_from_to_edge)[0]) << ":[\n  {\"from\":";
-            fs << oid2json_str((*type_from_to_edge)[1]) << ",\"to\":";
-            fs << oid2json_str((*type_from_to_edge)[2]);
-            sep_type = "\n],\n";
-            prev_type = (*type_from_to_edge)[0];
+    auto label_from_to_edge = label_from_to_edge_it.next();
+    auto sep_label = "";
+    uint64_t prev_label = ObjectId::NULL_ID;
+    while (label_from_to_edge != nullptr) {
+        if ((*label_from_to_edge)[0] != prev_label) {
+            // Handle first occurrence of label
+            fs << sep_label << oid2json_str((*label_from_to_edge)[0]) << ":[\n  {\"from\":";
+            fs << oid2json_str((*label_from_to_edge)[1]) << ",\"to\":";
+            fs << oid2json_str((*label_from_to_edge)[2]);
+            sep_label = "\n],\n";
+            prev_label = (*label_from_to_edge)[0];
         } else {
-            // Handle subsequent occurrence of type
-            fs << ",\n  {\"from\":" << oid2json_str((*type_from_to_edge)[1]);
-            fs << ",\"to\":" << oid2json_str((*type_from_to_edge)[2]);
+            // Handle subsequent occurrence of label
+            fs << ",\n  {\"from\":" << oid2json_str((*label_from_to_edge)[1]);
+            fs << ",\"to\":" << oid2json_str((*label_from_to_edge)[2]);
         }
         // Write out properties if any
-        auto object_key_value_it = quad_model.object_key_value->get_range(
+        auto object_key_value_it = quad_model.edge_key_value->get_range(
             &interruption_requested,
-            { (*type_from_to_edge)[3], 0, 0 },
-            { (*type_from_to_edge)[3], UINT64_MAX, UINT64_MAX }
+            { (*label_from_to_edge)[3], 0, 0 },
+            { (*label_from_to_edge)[3], UINT64_MAX, UINT64_MAX }
         );
         auto object_key_value = object_key_value_it.next();
         if (object_key_value != nullptr) {
             fs << ",\"properties\":{";
             auto sep_property = "";
             while (object_key_value != nullptr) {
-                fs << sep_property << oid2json_str((*object_key_value)[1]) << ":"
+                fs << sep_property << oid2json_str((*object_key_value)[1]) << ":" // TODO:
                    << oid2json_str((*object_key_value)[2]);
                 sep_property = ",";
                 object_key_value = object_key_value_it.next();
@@ -270,10 +271,10 @@ inline void dump_edges_json(const std::string& path)
         }
         fs << "}";
 
-        type_from_to_edge = type_from_to_edge_it.next();
+        label_from_to_edge = label_from_to_edge_it.next();
     }
 
-    if (prev_type != ObjectId::NULL_ID) {
+    if (prev_label != ObjectId::NULL_ID) {
         // Only when there were edges
         fs << "\n]";
     }
@@ -306,14 +307,14 @@ inline void dump_graph_quad_model(const std::string& path)
             node_label = node_label_it.next();
         }
         // Handle properties
-        auto object_key_value_it = quad_model.object_key_value->get_range(
+        auto object_key_value_it = quad_model.node_key_value->get_range(
             &interruption_requested,
             { (*node)[0], 0, 0 },
             { (*node)[0], UINT64_MAX, UINT64_MAX }
         );
         auto object_key_value = object_key_value_it.next();
         while (object_key_value != nullptr) {
-            auto key_name = oid2str((*object_key_value)[1]);
+            auto key_name = oid2str((*object_key_value)[1]); // TODO:
             key_name = key_name.substr(1, key_name.length() - 2);
             fs << " " << key_name << ":" << oid2str((*object_key_value)[2]);
             object_key_value = object_key_value_it.next();
@@ -323,31 +324,31 @@ inline void dump_graph_quad_model(const std::string& path)
     }
 
     // EDGES
-    auto from_to_type_edge_it = quad_model.from_to_type_edge->get_range(
+    auto from_to_label_edge_it = quad_model.from_to_label_edge->get_range(
         &interruption_requested,
         { 0, 0, 0, 0 },
         { UINT64_MAX, UINT64_MAX, UINT64_MAX, UINT64_MAX }
     );
-    auto from_to_type_edge = from_to_type_edge_it.next();
-    while (from_to_type_edge != nullptr) {
-        // Handle edge and type
-        fs << oid2str((*from_to_type_edge)[0]) << "->" << oid2str((*from_to_type_edge)[1]) << " :"
-           << oid2str((*from_to_type_edge)[2]);
+    auto from_to_label_edge = from_to_label_edge_it.next();
+    while (from_to_label_edge != nullptr) {
+        // Handle edge and label
+        fs << oid2str((*from_to_label_edge)[0]) << "->" << oid2str((*from_to_label_edge)[1]) << " :"
+           << oid2str((*from_to_label_edge)[2]);
         // Handle properties
-        auto object_key_value_it = quad_model.object_key_value->get_range(
+        auto object_key_value_it = quad_model.edge_key_value->get_range(
             &interruption_requested,
-            { (*from_to_type_edge)[3], 0, 0 },
-            { (*from_to_type_edge)[3], UINT64_MAX, UINT64_MAX }
+            { (*from_to_label_edge)[3], 0, 0 },
+            { (*from_to_label_edge)[3], UINT64_MAX, UINT64_MAX }
         );
         auto object_key_value = object_key_value_it.next();
         while (object_key_value != nullptr) {
-            auto key_name = oid2str((*object_key_value)[1]);
+            auto key_name = oid2str((*object_key_value)[1]); // TODO:
             key_name = key_name.substr(1, key_name.length() - 2);
             fs << " " << key_name << ":" << oid2str((*object_key_value)[2]);
             object_key_value = object_key_value_it.next();
         }
         fs << '\n';
-        from_to_type_edge = from_to_type_edge_it.next();
+        from_to_label_edge = from_to_label_edge_it.next();
     }
 }
 

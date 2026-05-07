@@ -2,6 +2,8 @@
 
 #include "query/parser/op/sparql/op.h"
 
+#include <vector>
+
 namespace SPARQL {
 
 class OpFrom : public Op {
@@ -54,9 +56,9 @@ public:
     {
         os << std::string(indent, ' ') << "OpFrom(";
         bool from_printed = false;
-        if (from_graphs.size() > 0){
+        if (from_graphs.size() > 0) {
             from_printed = true;
-            for (auto& graph : from_graphs){
+            for (auto& graph : from_graphs) {
                 os << graph << ",";
             }
         }
@@ -66,7 +68,7 @@ public:
                 os << " ";
             }
             os << "NAMED: ";
-            for (auto& named_graph : from_named_graphs){
+            for (auto& named_graph : from_named_graphs) {
                 os << named_graph << ",";
             }
         }

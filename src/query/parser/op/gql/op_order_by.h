@@ -1,12 +1,12 @@
 #pragma once
 
-#include <cstddef>
-#include <vector>
-
 #include "query/parser/expr/gql/expr.h"
 #include "query/parser/expr/gql/expr_printer.h"
 #include "query/parser/expr/gql/expr_var.h"
 #include "query/parser/op/gql/op.h"
+
+#include <cstddef>
+#include <vector>
 
 namespace GQL {
 

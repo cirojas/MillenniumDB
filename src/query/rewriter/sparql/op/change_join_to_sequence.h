@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory>
-
 #include "query/parser/op/sparql/op.h"
 #include "query/parser/op/sparql/op_visitor.h"
+
+#include <vector>
 
 namespace SPARQL {
 

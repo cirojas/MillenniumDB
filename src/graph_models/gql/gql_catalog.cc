@@ -30,14 +30,11 @@ GQLCatalog::GQLCatalog(const std::string& filename) :
         node_labels_str = read_strvec();
         edge_labels_str = read_strvec();
 
+        keys_str = read_strvec();
+
         node_labels2id = convert_strvec_to_map(node_labels_str);
         edge_labels2id = convert_strvec_to_map(edge_labels_str);
-
-        node_keys_str = read_strvec();
-        edge_keys_str = read_strvec();
-
-        node_keys2id = convert_strvec_to_map(node_keys_str);
-        edge_keys2id = convert_strvec_to_map(edge_keys_str);
+        keys2id = convert_strvec_to_map(keys_str);
     } else {
         has_changes = true;
     }
@@ -92,6 +89,5 @@ void GQLCatalog::save()
     write_strvec(node_labels_str);
     write_strvec(edge_labels_str);
 
-    write_strvec(node_keys_str);
-    write_strvec(edge_keys_str);
+    write_strvec(keys_str);
 }

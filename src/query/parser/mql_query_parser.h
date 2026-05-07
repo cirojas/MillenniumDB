@@ -7,6 +7,7 @@
 #include "query/parser/grammar/mql/query_is_update_visitor.h"
 #include "query/parser/grammar/mql/query_visitor.h"
 #include "query/parser/op/mql/op.h"
+#include "query/query_context.h"
 #include "query/rewriter/mql/op/check_var_names.h"
 #include "query/rewriter/mql/op/evaluate_constants.h"
 #include "query/rewriter/mql/op/push_where_properties.h"

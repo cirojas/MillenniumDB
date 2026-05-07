@@ -6,7 +6,7 @@
 #include "query/parser/expr/mql/expr.h"
 #include "query/parser/expr/mql/expr_visitor.h"
 #include "query/parser/op/mql/op_visitor.h"
-#include "query/update/mql/update_action_visitor.h"
+#include "query/update/mql/update_action/update_action_visitor.h"
 
 namespace MQL {
 
@@ -66,7 +66,6 @@ private:
     void visit(ExprNormalize&) override;
     void visit(ExprStr&) override;
     void visit(ExprLabels&) override;
-    void visit(ExprType&) override;
     void visit(ExprProperties&) override;
 
     void visit(ExprAggAvg&) override;
@@ -82,11 +81,11 @@ public:
     void visit(InsertPropertyExpr&) override;
 
     void visit(InsertNode&) override { }
-    void visit(InsertLabel&) override { }
-    void visit(SetLabelOrType&) override { }
+    void visit(InsertNodeLabel&) override { }
+    void visit(SetLabel&) override { }
     void visit(InsertProperty&) override { }
     void visit(DeleteProperty&) override { }
-    void visit(DeleteLabel&) override { }
+    void visit(DeleteNodeLabel&) override { }
     void visit(InsertEdge&) override { }
     void visit(DeleteObject&) override { }
     void visit(CreateTextIndex&) override { }

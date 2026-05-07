@@ -44,45 +44,49 @@ public:
     { }
 };
 
-// class PropertyOperatorConstraint {
-// public:
-//     VarId var;
-//     ObjectId key;
-// };
-
 class OpBasicGraphPattern : public Op {
 public:
-    std::set<Label> labels;
-    std::set<Property> properties;
+    std::set<Label> node_labels;
+    std::set<Property> node_properties;
+    std::set<Property> edge_properties;
     std::set<Edge> edges;
     std::set<Path> paths;
     std::set<DisjointVar> disjoint_vars;
     std::set<DisjointTerm> disjoint_terms;
 
-    std::set<VarId> vars; // contains declared variables and anonymous (auto-generated in the constructor)
+    // contains declared variables and anonymous (auto-generated in the constructor)
+    std::set<VarId> vars;
 
     std::unique_ptr<Op> clone() const override
     {
         return std::make_unique<OpBasicGraphPattern>(*this);
     }
 
-    void add_label(Id node, ObjectId label)
+    void add_node_label(Id node, ObjectId label)
     {
         if (node.is_var()) {
             vars.insert(node.get_var());
         }
-        labels.emplace(node, label);
+        node_labels.emplace(node, label);
     }
 
-    void add_property(Id obj, ObjectId key, Id value)
+    void add_edge_property(Id edge, ObjectId key, Id value)
     {
-        if (obj.is_var()) {
-            vars.insert(obj.get_var());
+        if (edge.is_var()) {
+            vars.insert(edge.get_var());
         }
-        properties.emplace(obj, key, value);
+        edge_properties.emplace(edge, key, value);
     }
 
-    void add_edge(Id from, Id to, Id type, Id edge)
+    void add_node_property(Id node, ObjectId key, Id value)
+    {
+        if (node.is_var()) {
+            vars.insert(node.get_var());
+        }
+        edge_properties.emplace(node, key, value);
+    }
+
+    void add_edge(Id from, Id to, Id label, Id edge)
     {
         if (from.is_var()) {
             vars.insert(from.get_var());
@@ -90,14 +94,14 @@ public:
         if (to.is_var()) {
             vars.insert(to.get_var());
         }
-        if (type.is_var()) {
-            vars.insert(type.get_var());
+        if (label.is_var()) {
+            vars.insert(label.get_var());
         }
         if (edge.is_var()) {
             vars.insert(edge.get_var());
         }
 
-        edges.emplace(from, to, type, edge);
+        edges.emplace(from, to, label, edge);
     }
 
     void add_path(
@@ -153,11 +157,14 @@ public:
         os << std::string(indent, ' ');
         os << "OpBasicGraphPattern()\n";
 
-        for (auto& label : labels) {
-            label.print(os, indent + 2);
+        for (auto& node_label : node_labels) {
+            node_label.print(os, indent + 2);
         }
-        for (auto& property : properties) {
-            property.print(os, indent + 2);
+        for (auto& edge_property : edge_properties) {
+            edge_property.print(os, indent + 2);
+        }
+        for (auto& node_property : node_properties) {
+            node_property.print(os, indent + 2);
         }
         for (auto& edge : edges) {
             edge.print(os, indent + 2);

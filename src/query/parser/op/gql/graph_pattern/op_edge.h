@@ -1,6 +1,9 @@
 #pragma once
 
+#include "graph_models/object_id.h"
 #include "query/parser/op/gql/op.h"
+
+#include <optional>
 
 namespace GQL {
 

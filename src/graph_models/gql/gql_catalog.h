@@ -53,9 +53,6 @@ public:
     std::vector<std::string> edge_labels_str;
     boost::unordered_flat_map<std::string, uint64_t> edge_labels2id;
 
-    std::vector<std::string> node_keys_str;
-    boost::unordered_flat_map<std::string, uint64_t> node_keys2id;
-
-    std::vector<std::string> edge_keys_str;
-    boost::unordered_flat_map<std::string, uint64_t> edge_keys2id;
+    std::vector<std::string> keys_str;
+    boost::unordered_flat_map<std::string, uint64_t> keys2id;
 };

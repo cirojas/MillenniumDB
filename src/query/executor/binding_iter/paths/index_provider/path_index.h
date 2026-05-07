@@ -79,11 +79,11 @@ class IndexProvider {
 public:
     virtual ~IndexProvider() = default;
 
-    // Get iterator for a transition defined by an edge type and direction, given the current node
-    virtual std::unique_ptr<EdgeIter> get_iter(uint64_t type_id, bool inverse, uint64_t node_id) = 0;
+    // Get iterator for a transition defined by an edge label and direction, given the current node
+    virtual std::unique_ptr<EdgeIter> get_iter(uint64_t label_id, bool inverse, uint64_t node_id) = 0;
 
-    // Get iterator for a transition defined by an edge type and direction, given the current node
-    virtual std::unique_ptr<EdgeIter> get_iter(uint64_t type_id, bool inverse) = 0;
+    // Get iterator for a transition defined by an edge label and direction, given the current node
+    virtual std::unique_ptr<EdgeIter> get_iter(uint64_t label_id, bool inverse) = 0;
 
     virtual std::unique_ptr<EdgeIter> get_outgoing(uint64_t node_id) = 0;
 

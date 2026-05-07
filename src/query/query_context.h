@@ -1,5 +1,12 @@
 #pragma once
 
+#include "graph_models/object_id.h"
+#include "query/id.h"
+#include "query/var_id.h"
+#include "system/buffer_manager.h"
+#include "system/string_manager.h"
+#include "system/tmp_manager.h"
+
 #include <cassert>
 #include <chrono>
 #include <ostream>
@@ -11,13 +18,6 @@
 
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
-
-#include "graph_models/object_id.h"
-#include "query/id.h"
-#include "query/var_id.h"
-#include "system/buffer_manager.h"
-#include "system/string_manager.h"
-#include "system/tmp_manager.h"
 
 struct ThreadInfo {
     bool interruption_requested = false;

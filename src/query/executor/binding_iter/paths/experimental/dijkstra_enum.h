@@ -1,14 +1,14 @@
 #pragma once
 
-#include <array>
-#include <queue>
-
-#include <boost/unordered/unordered_node_set.hpp>
-
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/experimental/search_state_dijkstra.h"
 #include "query/parser/paths/automaton/rdpq_automaton.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
+
+#include <array>
+#include <queue>
+
+#include <boost/unordered/unordered_node_set.hpp>
 
 namespace Paths { namespace Any {
 /*
@@ -54,7 +54,8 @@ private:
     // Evaluate data checks for a specific node
     bool eval_data_check(
         uint64_t node,
-        std::vector<std::tuple<Operators, ObjectId, ObjectId>>& property_checks
+        std::vector<std::tuple<Operators, ObjectId, ObjectId>>& property_checks,
+        bool is_node // else is edge
     );
 
     // Obtain the next state to add to open or to update (if it exists)

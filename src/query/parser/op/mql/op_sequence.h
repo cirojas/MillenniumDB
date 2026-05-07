@@ -2,6 +2,8 @@
 
 #include "query/parser/op/mql/op.h"
 
+#include <vector>
+
 namespace MQL {
 
 class OpSequence : public Op {

@@ -1,11 +1,10 @@
 #pragma once
 
-#include <cassert>
-#include <memory>
-#include <vector>
-
 #include "query/parser/op/sparql/op.h"
 #include "query/parser/op/sparql/op_triple.h"
+
+#include <cassert>
+#include <vector>
 
 namespace SPARQL {
 class OpInsertData : public Op {

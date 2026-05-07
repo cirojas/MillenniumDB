@@ -1,60 +1,62 @@
 #pragma once
 
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_addition.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_and.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_concat.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_division.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_equals.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_greater.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_greater_or_equals.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_has_edge_label.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_has_node_label.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_wildcard_label.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_is.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_less.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_less_or_equals.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_multiplication.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_not.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_not_equals.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_or.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_subtraction.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_xor.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_abs.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_modulo.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_sin.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_cos.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_tan.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_cot.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_sinh.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_cosh.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_tanh.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_asin.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_acos.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_atan.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_degrees.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_radians.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_log.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_log10.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_ln.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_exp.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_power.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_sqrt.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_floor.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_ceil.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_length.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_substr.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_fold.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_singletrim.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_multitrim.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_normalize.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_nullif.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_coalesce.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_simplecase.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_searchedcase.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_cast.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_node_labels.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_edge_labels.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_properties.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_in.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/binding_expr_term.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/binding_expr_var.h" // IWYU pragma: export
+// IWYU pragma: begin_exports
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_addition.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_and.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_concat.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_division.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_equals.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_greater.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_greater_or_equals.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_has_edge_label.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_has_node_label.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_wildcard_label.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_is.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_less.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_less_or_equals.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_multiplication.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_not.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_not_equals.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_or.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_subtraction.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_xor.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_abs.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_modulo.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_sin.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_cos.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_tan.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_cot.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_sinh.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_cosh.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_tanh.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_asin.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_acos.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_atan.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_degrees.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_radians.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_log.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_log10.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_ln.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_exp.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_power.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_sqrt.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_floor.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_ceil.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_length.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_substr.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_fold.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_singletrim.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_multitrim.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_normalize.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_nullif.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_coalesce.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_simplecase.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_searchedcase.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_cast.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_node_labels.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_edge_labels.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_properties.h"
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_in.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_term.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_var.h"
+// IWYU pragma: end_exports

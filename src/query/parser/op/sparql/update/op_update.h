@@ -1,10 +1,9 @@
 #pragma once
 
-#include <cassert>
-#include <memory>
-#include <vector>
-
 #include "query/parser/op/sparql/op.h"
+
+#include <cassert>
+#include <vector>
 
 namespace SPARQL {
 class OpUpdate : public Op {

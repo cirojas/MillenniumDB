@@ -13,7 +13,8 @@ using namespace Paths::Any;
 // Evaluate data checks for a specific object
 bool DijkstraCheck::eval_data_check(
     uint64_t obj,
-    vector<tuple<Operators, ObjectId, ObjectId>>& property_checks
+    vector<tuple<Operators, ObjectId, ObjectId>>& property_checks,
+    bool is_node
 )
 {
     // Perform all data checks in transition
@@ -32,11 +33,16 @@ bool DijkstraCheck::eval_data_check(
         max_prop_ids[1] = key_id;
         min_prop_ids[2] = 0;
         max_prop_ids[2] = UINT64_MAX;
-        auto prop_iter = quad_model.object_key_value->get_range(
-            &get_query_ctx().thread_info.interruption_requested,
-            Record<3>(min_prop_ids),
-            Record<3>(max_prop_ids)
-        );
+        auto prop_iter = is_node ? quad_model.node_key_value->get_range(
+                                       &get_query_ctx().thread_info.interruption_requested,
+                                       Record<3>(min_prop_ids),
+                                       Record<3>(max_prop_ids)
+                                   )
+                                 : quad_model.edge_key_value->get_range(
+                                       &get_query_ctx().thread_info.interruption_requested,
+                                       Record<3>(min_prop_ids),
+                                       Record<3>(max_prop_ids)
+                                   );
         auto prop_record = prop_iter.next();
 
         // Perform specific data check
@@ -72,7 +78,7 @@ void DijkstraCheck::_begin(Binding& _parent_binding)
     // Obtain states connected with the start state
     for (auto& t : automaton.from_to_connections[automaton.get_start()]) {
         // Perform all data checks in transition
-        bool check_succeeded = eval_data_check(start_object_id.id, t.property_checks);
+        bool check_succeeded = eval_data_check(start_object_id.id, t.property_checks, true);
 
         // All the data checks succeeded
         if (check_succeeded) {
@@ -135,7 +141,7 @@ bool DijkstraCheck::_next()
             auto child_record = iter.next();
             while (child_record != nullptr) {
                 // Perform data checks for the edge transition
-                if (!eval_data_check((*child_record)[3], transition.property_checks)) {
+                if (!eval_data_check((*child_record)[3], transition.property_checks, false)) {
                     child_record = iter.next();
                     continue;
                 }
@@ -150,7 +156,7 @@ bool DijkstraCheck::_next()
                 max_prop_ids[1] = cost_key.id;
                 min_prop_ids[2] = 0;
                 max_prop_ids[2] = UINT64_MAX;
-                auto prop_iter = quad_model.object_key_value->get_range(
+                auto prop_iter = quad_model.edge_key_value->get_range(
                     &get_query_ctx().thread_info.interruption_requested,
                     Record<3>(min_prop_ids),
                     Record<3>(max_prop_ids)
@@ -171,7 +177,7 @@ bool DijkstraCheck::_next()
                 // Perform all data checks in transition if edge data check has succeeded
                 for (auto& data_transition : automaton.from_to_connections[transition.to]) {
                     // Perform data checks
-                    bool succeeded = eval_data_check((*child_record)[2], data_transition.property_checks);
+                    bool succeeded = eval_data_check((*child_record)[2], data_transition.property_checks, true);
 
                     // Expand destination
                     if (succeeded) {
@@ -240,7 +246,7 @@ void DijkstraCheck::set_iter(const RDPQTransition& transition, const SearchState
         max_ids[0] = current_state->node_id.id;
         min_ids[1] = transition.type_id.id;
         max_ids[1] = transition.type_id.id;
-        iter = quad_model.to_type_from_edge->get_range(
+        iter = quad_model.to_label_from_edge->get_range(
             &get_query_ctx().thread_info.interruption_requested,
             Record<4>(min_ids),
             Record<4>(max_ids)
@@ -250,7 +256,7 @@ void DijkstraCheck::set_iter(const RDPQTransition& transition, const SearchState
         max_ids[0] = transition.type_id.id;
         min_ids[1] = current_state->node_id.id;
         max_ids[1] = current_state->node_id.id;
-        iter = quad_model.type_from_to_edge->get_range(
+        iter = quad_model.label_from_to_edge->get_range(
             &get_query_ctx().thread_info.interruption_requested,
             Record<4>(min_ids),
             Record<4>(max_ids)
@@ -278,7 +284,7 @@ void DijkstraCheck::_reset()
     // Obtain states connected with the start state
     for (auto& t : automaton.from_to_connections[automaton.get_start()]) {
         // Perform all data checks in transition
-        bool check_succeeded = eval_data_check(start_object_id.id, t.property_checks);
+        bool check_succeeded = eval_data_check(start_object_id.id, t.property_checks, true);
 
         // All the data checks succeeded
         if (check_succeeded) {

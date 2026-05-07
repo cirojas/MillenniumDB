@@ -28,15 +28,30 @@ void PushWhereProperties::visit(OpOrderBy& op_order_by)
 void PushWhereProperties::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 {
     auto bgp_vars = op_basic_graph_pattern.get_all_vars();
-    auto it = props_to_push.begin();
+    {
+        auto it = node_props_to_push.begin();
 
-    while (it != props_to_push.end()) {
-        assert(it->obj.is_var());
-        if (bgp_vars.find(it->obj.get_var()) != bgp_vars.end()) {
-            op_basic_graph_pattern.add_property(it->obj, it->key, it->value);
-            it = props_to_push.erase(it);
-        } else {
-            ++it;
+        while (it != node_props_to_push.end()) {
+            assert(it->obj.is_var());
+            if (bgp_vars.find(it->obj.get_var()) != bgp_vars.end()) {
+                op_basic_graph_pattern.add_node_property(it->obj, it->key, it->value);
+                it = node_props_to_push.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+    {
+        auto it = edge_props_to_push.begin();
+
+        while (it != edge_props_to_push.end()) {
+            assert(it->obj.is_var());
+            if (bgp_vars.find(it->obj.get_var()) != bgp_vars.end()) {
+                op_basic_graph_pattern.add_edge_property(it->obj, it->key, it->value);
+                it = edge_props_to_push.erase(it);
+            } else {
+                ++it;
+            }
         }
     }
 }
@@ -58,7 +73,7 @@ void PushWhereProperties::visit(OpSequence& op_sequence)
 
 void PushWhereProperties::visit(OpWhere& op_where)
 {
-    PushWherePropertiesExpr expr_visitor(op_where.expr, props_to_push);
+    PushWherePropertiesExpr expr_visitor(op_where.expr, node_props_to_push, edge_props_to_push);
     op_where.expr->accept_visitor(expr_visitor);
     op_where.op->accept_visitor(*this);
 }
@@ -100,29 +115,29 @@ void PushWherePropertiesExpr::visit(ExprEquals& expr_equals)
 {
     if (auto casted_prop = dynamic_cast<ExprVarProperty*>(expr_equals.lhs.get())) {
         if (auto casted_const = dynamic_cast<ExprConstant*>(expr_equals.rhs.get())) {
-            props_to_push
-                .emplace_back(casted_prop->var_without_property, casted_prop->key, casted_const->value);
+            // TODO: need to know whether a var is an edge or node
+            bool is_node_prop;
+            if (is_node_prop) {
+                node_props_to_push
+                    .emplace_back(casted_prop->var_without_property, casted_prop->key, casted_const->value);
+            } else {
+                edge_props_to_push
+                    .emplace_back(casted_prop->var_without_property, casted_prop->key, casted_const->value);
+            }
             *current_parent = std::make_unique<ExprConstant>(ObjectId::get_true());
         }
-        // else if (auto casted_prop2 = dynamic_cast<ExprVarProperty*>(expr_equals.rhs.get())) {
-        //     props_to_push
-        //         .emplace_back(casted_prop->var_without_property, casted_prop->key, casted_prop->var_with_property);
-        //     props_to_push
-        //         .emplace_back(casted_prop2->var_without_property, casted_prop2->key, casted_prop2->var_with_property);
-        //     *current_parent = std::make_unique<ExprConstant>(ObjectId::get_true());
-        // }
     } else if (auto casted_prop = dynamic_cast<ExprVarProperty*>(expr_equals.rhs.get())) {
         if (auto casted_const = dynamic_cast<ExprConstant*>(expr_equals.lhs.get())) {
-            props_to_push
-                .emplace_back(casted_prop->var_without_property, casted_prop->key, casted_const->value);
+            // TODO: need to know whether a var is an edge or node
+            bool is_node_prop;
+            if (is_node_prop) {
+                node_props_to_push
+                    .emplace_back(casted_prop->var_without_property, casted_prop->key, casted_const->value);
+            } else {
+                edge_props_to_push
+                    .emplace_back(casted_prop->var_without_property, casted_prop->key, casted_const->value);
+            }
             *current_parent = std::make_unique<ExprConstant>(ObjectId::get_true());
         }
-        // else if (auto casted_prop2 = dynamic_cast<ExprVarProperty*>(expr_equals.lhs.get())) {
-        //     props_to_push
-        //         .emplace_back(casted_prop->var_without_property, casted_prop->key, casted_prop->var_with_property);
-        //     props_to_push
-        //         .emplace_back(casted_prop2->var_without_property, casted_prop2->key, casted_prop2->var_with_property);
-        //     *current_parent = std::make_unique<ExprConstant>(ObjectId::get_true());
-        // }
     }
 }

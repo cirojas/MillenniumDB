@@ -1,9 +1,9 @@
 #pragma once
 
+#include "query/parser/op/sparql/op.h"
+
 #include <string>
 #include <vector>
-
-#include "query/parser/op/sparql/op.h"
 
 namespace SPARQL {
 
@@ -18,19 +18,21 @@ public:
     const uint64_t limit;
 
     OpDescribe(
-        std::unique_ptr<Op>        op,
-        std::vector<VarId>&&       vars,
+        std::unique_ptr<Op> op,
+        std::vector<VarId>&& vars,
         std::vector<std::string>&& iris,
-        uint64_t                   offset,
-        uint64_t                   limit
+        uint64_t offset,
+        uint64_t limit
     ) :
-        op     (std::move(op)),
-        vars   (std::move(vars)),
-        iris   (std::move(iris)),
-        offset (offset),
-        limit  (limit) { }
+        op(std::move(op)),
+        vars(std::move(vars)),
+        iris(std::move(iris)),
+        offset(offset),
+        limit(limit)
+    { }
 
-    std::unique_ptr<Op> clone() const override {
+    std::unique_ptr<Op> clone() const override
+    {
         std::unique_ptr<Op> op_clone;
         if (op) {
             op_clone = op->clone();
@@ -49,11 +51,13 @@ public:
         );
     }
 
-    void accept_visitor(OpVisitor& visitor) override {
+    void accept_visitor(OpVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 
-    std::set<VarId> get_all_vars() const override {
+    std::set<VarId> get_all_vars() const override
+    {
         std::set<VarId> res;
 
         if (op) {
@@ -67,15 +71,18 @@ public:
         return res;
     }
 
-    std::set<VarId> get_scope_vars() const override {
+    std::set<VarId> get_scope_vars() const override
+    {
         return {};
     }
 
-    std::set<VarId> get_safe_vars() const override {
+    std::set<VarId> get_safe_vars() const override
+    {
         return {};
     }
 
-    std::set<VarId> get_fixable_vars() const override {
+    std::set<VarId> get_fixable_vars() const override
+    {
         if (op) {
             return op->get_fixable_vars();
         } else {
@@ -83,18 +90,25 @@ public:
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
+    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
+    {
         os << std::string(indent, ' ') << "OpDescribe(";
 
         auto first = true;
         for (auto& var : vars) {
-            if (first) first = false; else os << ", ";
+            if (first)
+                first = false;
+            else
+                os << ", ";
 
-            os << "?" << get_query_ctx().get_var_name(var);
+            os << "?" << var;
         }
 
         for (auto& iri : iris) {
-            if (first) first = false; else os << ", ";
+            if (first)
+                first = false;
+            else
+                os << ", ";
             os << iri;
         }
 

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <vector>
-
 #include "query/parser/expr/sparql/expr.h"
 #include "query/parser/expr/sparql/expr_printer.h"
 #include "query/parser/op/sparql/op.h"
+
+#include <vector>
 
 namespace SPARQL {
 
@@ -55,7 +55,7 @@ public:
         for (auto& expr : vars_exprs) {
             if (expr != nullptr) {
                 new_vars_exprs.push_back(expr->clone());
-            } else  {
+            } else {
                 new_vars_exprs.push_back(nullptr);
             }
         }
@@ -174,7 +174,7 @@ public:
             auto var = vars[i];
             auto& expr = vars_exprs[i];
 
-            os << '?' << get_query_ctx().get_var_name(var);
+            os << '?' << var;
 
             if (expr != nullptr) {
                 os << "=";

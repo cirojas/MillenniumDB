@@ -33,8 +33,7 @@ void IndexScan<N>::_reset()
 template<std::size_t N>
 bool IndexScan<N>::_next()
 {
-    auto next = it.next();
-    if (next != nullptr) {
+    if (auto next = it.next()) {
         for (uint_fast32_t i = 0; i < N; ++i) {
             ranges[i]->try_assign(*parent_binding, ObjectId((*next)[i]));
         }

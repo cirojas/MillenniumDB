@@ -1,7 +1,7 @@
 #include "update_context.h"
 
 #include "graph_models/quad_model/conversions.h"
-#include "query/update/mql/update_action.h"
+#include "query/update/mql/update_action/update_action.h"
 
 using namespace MQL;
 
@@ -11,14 +11,14 @@ UpdateContext::UpdateContext()
     current_edge = quad_model.catalog.max_edge;
 
     for (auto&& [predicate, names] : quad_model.catalog.text_index_manager.get_predicate2names()) {
-        auto predicate_id = Conversions::pack_string(predicate).id;
+        auto predicate_id = Conversions::pack_string(predicate).id; // TODO:
         for (auto& name : names) {
             indexed_keys[predicate_id].push_back(name);
         }
     }
 
     for (auto&& [predicate, names] : quad_model.catalog.hnsw_index_manager.get_predicate2names()) {
-        auto predicate_id = Conversions::pack_string(predicate).id;
+        auto predicate_id = Conversions::pack_string(predicate).id; // TODO:
         for (auto& name : names) {
             indexed_keys[predicate_id].push_back(name);
         }
@@ -49,6 +49,7 @@ void UpdateContext::process_new_property(uint64_t obj, uint64_t key, uint64_t va
     }
 }
 
+// TODO: diferenciar nodos y edges?
 void UpdateContext::process_deleted_property(uint64_t obj, uint64_t key, uint64_t val)
 {
     auto keys = indexed_keys.find(key);

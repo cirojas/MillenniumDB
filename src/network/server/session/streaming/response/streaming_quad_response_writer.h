@@ -119,12 +119,15 @@ public:
             const auto list = MQL::Conversions::unpack_list(oid);
             return write_list(list);
         }
+        case ObjectSubType::PGMetaData:
+            // TODO:
+            int TODO;
+            return;
         case ObjectSubType::StringXsd:
         case ObjectSubType::StringLang:
         case ObjectSubType::StringDatatype:
         case ObjectSubType::Iri:
         case ObjectSubType::NotFound:
-        case ObjectSubType::PGMetaData:
             assert(false);
             break;
         }

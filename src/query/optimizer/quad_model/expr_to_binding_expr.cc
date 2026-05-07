@@ -413,13 +413,6 @@ void ExprToBindingExpr::visit(ExprLabels& expr)
     tmp = std::make_unique<BindingExprLabels>(std::move(tmp));
 }
 
-void ExprToBindingExpr::visit(ExprType& expr)
-{
-    expr.expr->accept_visitor(*this);
-
-    tmp = std::make_unique<BindingExprType>(std::move(tmp));
-}
-
 void ExprToBindingExpr::visit(ExprProperties& expr)
 {
     expr.expr->accept_visitor(*this);

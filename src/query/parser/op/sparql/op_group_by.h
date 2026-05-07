@@ -1,11 +1,12 @@
 #pragma once
 
-#include <optional>
-#include <vector>
-
 #include "query/parser/expr/sparql/expr.h"
 #include "query/parser/expr/sparql/expr_printer.h"
 #include "query/parser/op/sparql/op.h"
+
+#include <cassert>
+#include <optional>
+#include <vector>
 
 namespace SPARQL {
 
@@ -94,7 +95,7 @@ public:
 
             expr->accept_visitor(printer);
             if (alias) {
-                os << " AS " << get_query_ctx().get_var_name(*alias);
+                os << " AS " << *alias;
             }
             assert(expr != nullptr);
         }

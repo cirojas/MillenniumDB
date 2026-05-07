@@ -6,25 +6,27 @@
 #include "graph_models/object_id.h"
 #include "graph_models/quad_model/quad_catalog.h"
 #include "import/disk_vector.h"
+#include "import/external_helper.h"
 #include "import/quad_model/csv/aux_structs.h"
 #include "import/quad_model/csv/lexer/state.h"
 #include "import/quad_model/csv/lexer/token.h"
 #include "import/quad_model/csv/lexer/tokenizer.h"
-#include "import/external_helper.h"
 
 namespace Import { namespace QuadModel { namespace CSV {
 
 class OnDiskImport {
 public:
-    static constexpr char PENDING_DECLARED_NODES_FILENAME_PREFIX[] = "tmp_pending_declared_nodes";
-    static constexpr char PENDING_LABELS_FILENAME_PREFIX[] = "tmp_pending_labels";
-    static constexpr char PENDING_PROPERTIES_FILENAME_PREFIX[] = "tmp_pending_properties";
-    static constexpr char PENDING_EDGES_FILENAME_PREFIX[] = "tmp_pending_edges";
+    static constexpr char PENDING_NODES_PREFIX[] = "/tmp_pending_nodes";
+    static constexpr char PENDING_NODE_LABELS_PREFIX[] = "/tmp_pending_node_labels";
+    static constexpr char PENDING_NODE_PROPERTIES_PREFIX[] = "/tmp_pending_node_properties";
+    static constexpr char PENDING_EDGE_PROPERTIES_PREFIX[] = "/tmp_pending_edge_properties";
+    static constexpr char PENDING_EDGES_PREFIX[] = "/tmp_pending_edges";
 
     OnDiskImport(
         const std::string& db_folder,
         uint64_t string_buffer_size,
         uint64_t tensor_buffer_size,
+        // TODO: support custom separator? (',' '\t' ';' '|')
         char list_separator
     );
 
@@ -69,7 +71,7 @@ private:
     int column_with_id;
     int column_with_id_from;
     int column_with_id_to;
-    int column_with_type;
+    int column_with_edge_label;
     std::vector<CSVColumn> columns;
     int current_column = 0;
 
@@ -80,19 +82,22 @@ private:
     std::vector<boost::unordered_flat_map<std::string, uint64_t>> csvid_groups;
     boost::unordered_flat_map<std::string, uint64_t> csvid_groups_index;
 
-    std::unique_ptr<DiskVector<1>> pending_declared_nodes;
-    std::unique_ptr<DiskVector<2>> pending_labels;
-    std::unique_ptr<DiskVector<3>> pending_properties;
+    std::unique_ptr<DiskVector<1>> pending_nodes;
+    std::unique_ptr<DiskVector<2>> pending_node_labels;
+    std::unique_ptr<DiskVector<3>> pending_node_properties;
+    std::unique_ptr<DiskVector<3>> pending_edge_properties;
     std::unique_ptr<DiskVector<4>> pending_edges;
 
-    DiskVector<1> declared_nodes;
-    DiskVector<2> labels;
-    DiskVector<3> properties;
-    DiskVector<4> edges;
+    DiskVector<1> nodes;
+    DiskVector<2> node_labels;
+    DiskVector<3> node_properties;
+    DiskVector<3> edge_properties;
     DiskVector<3> equal_from_to;
-    DiskVector<3> equal_from_type;
-    DiskVector<3> equal_to_type;
-    DiskVector<2> equal_from_to_type;
+    DiskVector<4> edges;
+
+    boost::unordered_flat_map<std::string, uint64_t> node_labels2id;
+    boost::unordered_flat_map<std::string, uint64_t> edge_labels2id;
+    boost::unordered_flat_map<std::string, uint64_t> keys2id;
 
     // manager writing bytes to disk in a buffered manner
     std::unique_ptr<ExternalHelper> ext_helper;
@@ -105,7 +110,6 @@ private:
 
     uint64_t get_str_id(char* str, uint64_t str_size);
 
-    void save_headers(std::vector<std::unique_ptr<MDBIstreamFile>>& files);
     void parse_node_files(std::vector<std::unique_ptr<MDBIstreamFile>>& in_nodes);
     void parse_edge_files(std::vector<std::unique_ptr<MDBIstreamFile>>& in_edges);
 
@@ -153,11 +157,9 @@ private:
     }
 
     void try_save_declared_node(uint64_t node_id);
-
-    void try_save_label(uint64_t node_id, uint64_t label_id);
-
-    void try_save_property(uint64_t id1, uint64_t key_id, uint64_t value_id);
-
+    void try_save_node_label(uint64_t node_id, uint64_t label_id);
+    void try_save_node_property(uint64_t id1, uint64_t key_id, uint64_t value_id);
+    void try_save_edge_property(uint64_t id1, uint64_t key_id, uint64_t value_id);
     void try_save_quad(uint64_t from_id, uint64_t to_id, uint64_t type_id, uint64_t edge_id);
 };
 

@@ -3,6 +3,7 @@
 #include "query/exceptions.h"
 #include "query/parser/expr/mql/exprs.h"
 #include "query/parser/op/mql/ops.h"
+#include "query/query_context.h"
 
 using namespace MQL;
 
@@ -112,18 +113,22 @@ void CheckVarNames::visit(OpOrderBy& op_order_by)
 
 void CheckVarNames::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 {
-    for (const auto& label : op_basic_graph_pattern.labels) {
+    for (const auto& label : op_basic_graph_pattern.node_labels) {
         try_insert_joinable_var(label.node);
     }
 
-    for (const auto& property : op_basic_graph_pattern.properties) {
+    for (const auto& property : op_basic_graph_pattern.node_properties) {
+        try_insert_joinable_var(property.obj);
+    }
+
+    for (const auto& property : op_basic_graph_pattern.edge_properties) {
         try_insert_joinable_var(property.obj);
     }
 
     for (const auto& edge : op_basic_graph_pattern.edges) {
         try_insert_joinable_var(edge.from);
         try_insert_joinable_var(edge.to);
-        try_insert_joinable_var(edge.type);
+        try_insert_joinable_var(edge.label);
         try_insert_joinable_var(edge.edge);
     }
 
@@ -394,11 +399,6 @@ void CheckVarNamesExpr::visit(ExprStr& expr)
 }
 
 void CheckVarNamesExpr::visit(ExprLabels& expr)
-{
-    expr.expr->accept_visitor(*this);
-}
-
-void CheckVarNamesExpr::visit(ExprType& expr)
 {
     expr.expr->accept_visitor(*this);
 }

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <string>
-
 #include "query/parser/op/sparql/op.h"
 #include "storage/index/text_search/normalize_funcs.h"
 #include "storage/index/text_search/tokenize_funcs.h"
+
+#include <string>
 
 namespace SPARQL {
 
