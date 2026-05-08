@@ -10,13 +10,10 @@ namespace SPARQL {
 
 class CSVSelectExecutor : public QueryExecutor {
 public:
-    CSVSelectExecutor(
-        std::unique_ptr<BindingIter> root,
-        std::vector<VarId>           projection_vars
-    ) :
-        root            (std::move(root)),
-        projection_vars (std::move(projection_vars)) { }
-
+    CSVSelectExecutor(std::unique_ptr<BindingIter> root, std::vector<VarId> projection_vars) :
+        root(std::move(root)),
+        projection_vars(std::move(projection_vars))
+    { }
 
     uint64_t execute(std::ostream&) override;
 
@@ -24,8 +21,8 @@ public:
 
 private:
     std::unique_ptr<BindingIter> root;
-    std::unique_ptr<Binding>     binding;
-    std::vector<VarId>           projection_vars;
+    std::unique_ptr<Binding> binding;
+    std::vector<VarId> projection_vars;
 
     uint64_t execute_empty_binding(std::ostream&);
 

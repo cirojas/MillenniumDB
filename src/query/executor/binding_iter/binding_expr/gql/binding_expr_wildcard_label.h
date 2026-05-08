@@ -21,11 +21,6 @@ public:
         type(type)
     { }
 
-    void accept_visitor(BindingExprVisitor& visitor) override
-    {
-        visitor.visit(*this);
-    }
-
     ObjectId eval(const Binding& binding) override
     {
         uint64_t object_id = binding[var_id].id;

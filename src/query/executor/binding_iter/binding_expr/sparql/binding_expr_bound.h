@@ -22,11 +22,6 @@ public:
             return Conversions::pack_bool(true);
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override
-    {
-        visitor.visit(*this);
-    }
-
     void print(std::ostream& os, std::vector<BindingIter*>&) const override
     {
         os << "BOUND(" << var_id << ')';

@@ -37,11 +37,6 @@ public:
         return Conversions::try_pack_string_datatype(dt, str);
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override
-    {
-        visitor.visit(*this);
-    }
-
     void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
         os << "STRDT(";

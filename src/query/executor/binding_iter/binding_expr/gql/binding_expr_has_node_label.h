@@ -21,11 +21,6 @@ public:
         label_id(label_id)
     { }
 
-    void accept_visitor(BindingExprVisitor& visitor) override
-    {
-        visitor.visit(*this);
-    }
-
     ObjectId eval(const Binding& binding) override
     {
         bool interruption = false;

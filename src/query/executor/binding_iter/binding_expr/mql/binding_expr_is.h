@@ -50,11 +50,6 @@ public:
         return Conversions::pack_bool(res ^= negation);
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override
-    {
-        visitor.visit(*this);
-    }
-
     std::string get_type_name(ExprIs::TypeName type) const
     {
         switch (type) {

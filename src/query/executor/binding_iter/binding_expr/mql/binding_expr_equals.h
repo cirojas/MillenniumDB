@@ -31,11 +31,6 @@ public:
         return Conversions::pack_bool(Comparisons::compare(lhs_oid, rhs_oid) == 0);
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override
-    {
-        visitor.visit(*this);
-    }
-
     void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
         os << "(";

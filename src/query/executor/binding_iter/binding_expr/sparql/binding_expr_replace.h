@@ -101,10 +101,6 @@ public:
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override
-    {
-        visitor.visit(*this);
-    }
 
 private:
     std::wstring std_string_to_wstring(std::string& str)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "misc/min_max_heap.h"
+#include "query/exceptions.h"
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/var_id.h"
@@ -83,8 +84,8 @@ private:
 
     void set_iters();
 
-    inline std::unique_ptr<TextSearch::TextSearchIter> get_iter(const TextSearch::TextIndex& text_search_index
-    ) const
+    inline std::unique_ptr<TextSearch::TextSearchIter>
+        get_iter(const TextSearch::TextIndex& text_search_index) const
     {
         switch (search_type) {
         case TextSearch::SearchType::MATCH:

@@ -17,7 +17,7 @@ public:
 
     void visit(OpBasicGraphPattern&) override;
     void visit(OpCall&) override { }
-    void visit(OpLet&) override { }
+    void visit(OpLet&) override; // TODO: read and infere type if possible
     void visit(OpGroupBy&) override;
     void visit(OpHaving&) override;
     void visit(OpOptional&) override;

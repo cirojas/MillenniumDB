@@ -4,6 +4,7 @@
 #include <memory>
 #include <set>
 
+#include "query/exceptions.h"
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
 #include "query/parser/op/sparql/op.h"

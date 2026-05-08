@@ -62,11 +62,6 @@ public:
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override
-    {
-        visitor.visit(*this);
-    }
-
     void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
         os << "mdbfn:cosineDistance(";

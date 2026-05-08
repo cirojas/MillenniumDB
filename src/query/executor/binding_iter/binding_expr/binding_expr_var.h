@@ -15,11 +15,6 @@ public:
         return binding[var];
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override
-    {
-        visitor.visit(*this);
-    }
-
     void print(std::ostream& os, std::vector<BindingIter*>&) const override
     {
         os << var;

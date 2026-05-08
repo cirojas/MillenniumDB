@@ -16,11 +16,6 @@ public:
         return object_id;
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override
-    {
-        visitor.visit(*this);
-    }
-
     void print(std::ostream& os, std::vector<BindingIter*>&) const override
     {
         os << object_id;
