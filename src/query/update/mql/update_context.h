@@ -15,13 +15,16 @@ class UpdateContext {
 public:
     int64_t new_nodes = 0;
     int64_t new_edges = 0;
-    int64_t new_labels = 0;
-    int64_t new_properties = 0;
+    int64_t new_node_labels = 0;
+    int64_t new_node_properties = 0;
+    int64_t new_edge_properties = 0;
     int64_t deleted_nodes = 0;
     int64_t deleted_edges = 0;
-    int64_t deleted_labels = 0;
-    int64_t deleted_properties = 0;
-    int64_t overwritten_properties = 0;
+    int64_t deleted_node_labels = 0;
+    int64_t deleted_node_properties = 0;
+    int64_t deleted_edge_properties = 0;
+    int64_t overwritten_node_properties = 0;
+    int64_t overwritten_edge_properties = 0;
     int64_t overwritten_edges = 0;
 
     int64_t hnsw_index_inserts = 0;
@@ -30,14 +33,11 @@ public:
     int64_t text_index_deletes = 0;
 
     // IMPORTANT: stats may be negative, use int64_t
-    boost::unordered_flat_map<uint64_t, int64_t> label2total_count;
-    boost::unordered_flat_map<uint64_t, int64_t> key2total_count;
-    boost::unordered_flat_map<uint64_t, int64_t> type2total_count;
-
-    boost::unordered_flat_map<uint64_t, int64_t> type2equal_from_to_type_count;
-    boost::unordered_flat_map<uint64_t, int64_t> type2equal_from_to_count;
-    boost::unordered_flat_map<uint64_t, int64_t> type2equal_from_label_count;
-    boost::unordered_flat_map<uint64_t, int64_t> type2equal_to_label_count;
+    boost::unordered_flat_map<uint64_t, int64_t> node_label2total_diff;
+    boost::unordered_flat_map<uint64_t, int64_t> edge_label2total_diff;
+    boost::unordered_flat_map<uint64_t, int64_t> node_key2total_diff;
+    boost::unordered_flat_map<uint64_t, int64_t> edge_key2total_diff;
+    boost::unordered_flat_map<uint64_t, int64_t> edge_label2equal_from_to_diff;
 
     std::map<uint64_t, std::vector<std::string>> indexed_keys;
 
@@ -67,24 +67,14 @@ public:
         if (quad_model.label_node->insert({ label, node })) {
             quad_model.node_label->insert({ node, label });
 
-            new_labels++;
-            label2total_count[label]++;
+            new_node_labels++;
+            node_label2total_diff[label]++;
         }
     }
 
     uint64_t get_edge_label_id(const std::string&);
     uint64_t get_node_label_id(const std::string&);
     uint64_t get_key_id(const std::string&);
-
-    // void insert_property(uint64_t obj, uint64_t key, uint64_t val)
-    // {
-    //     if (ObjectId(obj).type() == ObjectType::DirectedEdge) {
-    //         insert_edge_property(obj, key, val);
-    //     } else {
-    //         // TODO: validate is node?
-    //         insert_node_property(obj, key, val);
-    //     }
-    // }
 
     void insert_node_property(uint64_t node, uint64_t key, uint64_t val)
     {
@@ -113,7 +103,7 @@ public:
             quad_model.node_key_value->insert({ node, key, val });
             quad_model.key_value_node->insert({ key, val, node });
 
-            overwritten_properties++;
+            overwritten_node_properties++;
 
             process_deleted_property(old_node, old_key, old_val);
             process_new_property(node, key, val);
@@ -123,8 +113,8 @@ public:
             quad_model.key_value_node->insert({ key, val, node });
 
             process_new_property(node, key, val);
-            key2total_count[key]++;
-            new_properties++;
+            node_key2total_diff[key]++;
+            new_node_properties++;
         }
     }
 
@@ -155,7 +145,7 @@ public:
             quad_model.edge_key_value->insert({ edge, key, val });
             quad_model.key_value_edge->insert({ key, val, edge });
 
-            overwritten_properties++;
+            overwritten_edge_properties++;
 
             process_deleted_property(old_edge, old_key, old_val);
             process_new_property(edge, key, val);
@@ -165,8 +155,8 @@ public:
             quad_model.key_value_edge->insert({ key, val, edge });
 
             process_new_property(edge, key, val);
-            key2total_count[key]++;
-            new_properties++;
+            edge_key2total_diff[key]++;
+            new_edge_properties++;
         }
     }
 
@@ -180,12 +170,12 @@ public:
         quad_model.edge_from_to_label->insert({ edge, from, to, label });
 
         new_edges++;
-        type2total_count[label]++;
+        edge_label2total_diff[label]++;
 
         if (from == to) {
             quad_model.equal_from_to->insert({ from, label, edge });
             quad_model.equal_from_to_inv->insert({ label, from, edge });
-            type2equal_from_to_count[label]++;
+            edge_label2equal_from_to_diff[label]++;
         }
     }
 
@@ -225,14 +215,14 @@ public:
             if (from == to) {
                 quad_model.equal_from_to->delete_record({ from, old_type, edge });
                 quad_model.equal_from_to_inv->delete_record({ old_type, from, edge });
-                type2equal_from_to_count[old_type]--;
+                edge_label2equal_from_to_diff[old_type]--;
             }
 
             // insert equal cases
             if (from == to) {
                 quad_model.equal_from_to->insert({ from, new_label, edge });
                 quad_model.equal_from_to_inv->insert({ new_label, from, edge });
-                type2equal_from_to_count[new_label]++;
+                edge_label2equal_from_to_diff[new_label]++;
             }
         }
     }
@@ -273,7 +263,7 @@ public:
             if (from == to) {
                 quad_model.equal_from_to->delete_record({ from, label, edge });
                 quad_model.equal_from_to_inv->delete_record({ label, from, edge });
-                type2equal_from_to_count[label]--;
+                edge_label2equal_from_to_diff[label]--;
             }
         }
 
@@ -295,8 +285,8 @@ public:
             quad_model.key_value_edge->delete_record({ k, v, edge });
 
             process_deleted_property(edge, k, v); // TODO:
-            deleted_properties++;
-            key2total_count[k]--;
+            deleted_edge_properties++;
+            edge_key2total_diff[k]--;
         }
     }
 
@@ -354,18 +344,18 @@ public:
             quad_model.key_value_node->delete_record({ k, v, node });
 
             process_deleted_property(node, k, v); // TODO:
-            deleted_properties++;
-            key2total_count[k]--;
+            deleted_node_properties++;
+            node_key2total_diff[k]--;
         }
     }
 
-    void delete_label(uint64_t node, uint64_t label)
+    void delete_node_label(uint64_t node, uint64_t label)
     {
         if (quad_model.node_label->delete_record({ node, label })) {
             quad_model.label_node->delete_record({ label, node });
 
-            label2total_count[label]--;
-            deleted_labels++;
+            node_label2total_diff[label]--;
+            deleted_node_labels++;
         }
     }
 
@@ -383,8 +373,8 @@ public:
             quad_model.key_value_node->delete_record({ key, value, node });
 
             process_deleted_property(node, key, value);
-            deleted_properties++;
-            key2total_count[key]--;
+            deleted_node_properties++;
+            node_key2total_diff[key]--;
         }
     }
 
@@ -402,8 +392,8 @@ public:
             quad_model.key_value_edge->delete_record({ key, value, edge });
 
             process_deleted_property(edge, key, value);
-            deleted_properties++;
-            key2total_count[key]--;
+            deleted_edge_properties++;
+            node_key2total_diff[key]--;
         }
     }
 };

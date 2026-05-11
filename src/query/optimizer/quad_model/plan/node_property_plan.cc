@@ -9,6 +9,7 @@
 #include "storage/index/leapfrog/leapfrog_bpt_iter.h"
 
 using namespace std;
+using namespace MQL;
 
 NodePropertyPlan::NodePropertyPlan(Id node, ObjectId key, Id value) :
     node(node),

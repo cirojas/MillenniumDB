@@ -1,4 +1,4 @@
-// #include "quad_catalog.h"
+#include "quad_catalog.h"
 
 // #include "query/exceptions.h"
 // #include "storage/index/text_search/quad.h"
@@ -197,96 +197,182 @@
 //     }
 // }
 
-// void QuadCatalog::print(std::ostream& os)
-// {
-//     os << "-------------------------------------\n";
-//     os << "Catalog:\n";
-//     os << "  nodes count:              " << nodes_count << "\n";
-//     os << "  edges count:              " << edge_count() << "\n";
+void QuadCatalog::print(std::ostream& os) const
+{
+    os << "-------------------------------------\n";
+    os << "Catalog:\n";
+    os << "  nodes count:              " << nodes_count << "\n";
+    os << "  edges count:              " << get_edges_count() << "\n";
 
-//     os << "  label count:              " << label_count << "\n";
-//     os << "  properties count:         " << properties_count << "\n";
+    os << "  node labels count:        " << node_labels_count << "\n";
+    os << "  node properties count:    " << node_properties_count << "\n";
+    os << "  edge properties count:    " << edge_properties_count << "\n";
 
-//     os << "  distinct labels:          " << label2total_count.size() << "\n";
-//     os << "  distinct keys:            " << key2total_count.size() << "\n";
-//     os << "  distinct type's:          " << type2total_count.size() << "\n";
+    os << "  distinct node labels:     " << node_label2total_count.size() << "\n";
+    os << "  distinct edge labels:     " << edge_label2total_count.size() << "\n";
+    os << "  distinct keys:            " << keys2id.size() << "\n";
 
-//     os << "  equal_from_to_count:      " << equal_from_to_count << "\n";
-//     os << "  equal_to_type_count:      " << equal_to_type_count << "\n";
-//     os << "  equal_from_type_count:    " << equal_from_type_count << "\n";
-//     os << "  equal_from_to_type_count: " << equal_from_to_type_count << "\n";
+    os << "  edges with self loop:     " << equal_from_to_count << "\n";
 
-//     const auto& text_index_name2metadata = text_index_manager.get_name2metadata();
-//     if (!text_index_name2metadata.empty()) {
-//         os << "  Text Indexes (" << text_index_name2metadata.size() << "):\n";
-//         for (const auto& [name, metadata] : text_index_name2metadata) {
-//             os << "    " << name << ": " << metadata << "\n";
-//         }
-//     }
+    const auto& text_index_name2metadata = text_index_manager.get_name2metadata();
+    if (!text_index_name2metadata.empty()) {
+        os << "  Text Indexes (" << text_index_name2metadata.size() << "):\n";
+        for (const auto& [name, metadata] : text_index_name2metadata) {
+            os << "    " << name << ": " << metadata << "\n";
+        }
+    }
 
-//     const auto& hnsw_index_name2metadata = hnsw_index_manager.get_name2metadata();
-//     if (!hnsw_index_name2metadata.empty()) {
-//         os << "  HNSW Indexes (" << hnsw_index_name2metadata.size() << "):\n";
-//         for (const auto& [name, metadata] : hnsw_index_name2metadata) {
-//             os << "    " << name << ": " << metadata << "\n";
-//         }
-//     }
+    const auto& hnsw_index_name2metadata = hnsw_index_manager.get_name2metadata();
+    if (!hnsw_index_name2metadata.empty()) {
+        os << "  HNSW Indexes (" << hnsw_index_name2metadata.size() << "):\n";
+        for (const auto& [name, metadata] : hnsw_index_name2metadata) {
+            os << "    " << name << ": " << metadata << "\n";
+        }
+    }
 
-//     os << "-------------------------------------\n";
-// }
+    os << "-------------------------------------\n";
+}
 
-// uint64_t QuadCatalog::connections_with_type(uint64_t type_id) const
-// {
-//     auto search = type2total_count.find(type_id);
-//     if (search == type2total_count.end()) {
-//         return 0;
-//     } else {
-//         return search->second;
-//     }
-// }
+bool QuadCatalog::index_name_exists(const std::string& index_name)
+{
+    return text_index_manager.get_text_index(index_name) != nullptr
+        || hnsw_index_manager.get_hnsw_index(index_name) != nullptr;
+}
 
-// uint64_t QuadCatalog::equal_from_to_type_with_type(uint64_t type_id) const
-// {
-//     auto search = type2equal_from_to_type_count.find(type_id);
-//     if (search == type2equal_from_to_type_count.end()) {
-//         return 0;
-//     } else {
-//         return search->second;
-//     }
-// }
+std::string QuadCatalog::get_key(uint64_t id)
+{
+    std::shared_lock lock(mutex);
+    std::string res;
+    if (id < keys_str.size()) {
+        res = keys_str[id];
+    }
+    return res;
+}
 
-// uint64_t QuadCatalog::equal_from_to_with_type(uint64_t type_id) const
-// {
-//     auto search = type2equal_from_to_count.find(type_id);
-//     if (search == type2equal_from_to_count.end()) {
-//         return 0;
-//     } else {
-//         return search->second;
-//     }
-// }
+std::string QuadCatalog::get_node_label(uint64_t id)
+{
+    std::shared_lock lock(mutex);
+    std::string res;
+    if (id < node_labels_str.size()) {
+        res = node_labels_str[id];
+    }
+    return res;
+}
 
-// uint64_t QuadCatalog::equal_from_type_with_type(uint64_t type_id) const
-// {
-//     auto search = type2equal_from_type_count.find(type_id);
-//     if (search == type2equal_from_type_count.end()) {
-//         return 0;
-//     } else {
-//         return search->second;
-//     }
-// }
+std::string QuadCatalog::get_edge_label(uint64_t id)
+{
+    std::shared_lock lock(mutex);
+    std::string res;
+    if (id < edge_labels_str.size()) {
+        res = edge_labels_str[id];
+    }
+    return res;
+}
 
-// uint64_t QuadCatalog::equal_to_type_with_type(uint64_t type_id) const
-// {
-//     auto search = type2equal_to_type_count.find(type_id);
-//     if (search == type2equal_to_type_count.end()) {
-//         return 0;
-//     } else {
-//         return search->second;
-//     }
-// }
+uint64_t QuadCatalog::get_key_id(const std::string& str)
+{
+    std::shared_lock lock(mutex);
+    auto it = keys2id.find(str);
+    if (it != keys2id.end()) {
+        return it->second;
+    } else {
+        return ObjectId::MASK_NOT_FOUND;
+    }
+}
 
-// bool QuadCatalog::index_name_exists(const std::string& index_name)
-// {
-//     return text_index_manager.get_text_index(index_name) != nullptr
-//         || hnsw_index_manager.get_hnsw_index(index_name) != nullptr;
-// }
+uint64_t QuadCatalog::get_node_label_id(const std::string& str)
+{
+    std::shared_lock lock(mutex);
+    auto it = node_labels2id.find(str);
+    if (it != node_labels2id.end()) {
+        return it->second;
+    } else {
+        return ObjectId::MASK_NOT_FOUND;
+    }
+}
+
+uint64_t QuadCatalog::get_edge_label_id(const std::string& str)
+{
+    std::shared_lock lock(mutex);
+    auto it = edge_labels2id.find(str);
+    if (it != edge_labels2id.end()) {
+        return it->second;
+    } else {
+        return ObjectId::MASK_NOT_FOUND;
+    }
+}
+
+uint64_t QuadCatalog::get_edge_label_count(ObjectId label) const
+{
+    std::shared_lock lock(mutex);
+    auto it = edge_label2total_count.find(label.id);
+    if (it != edge_label2total_count.end()) {
+        return it->second;
+    } else {
+        return 0;
+    }
+}
+
+uint64_t QuadCatalog::get_node_label_count(ObjectId label) const
+{
+    std::shared_lock lock(mutex);
+    auto it = node_label2total_count.find(label.id);
+    if (it != node_label2total_count.end()) {
+        return it->second;
+    } else {
+        return 0;
+    }
+}
+
+uint64_t QuadCatalog::get_node_property_count(ObjectId key) const
+{
+    std::shared_lock lock(mutex);
+    auto it = node_key2total_count.find(key.id);
+    if (it != node_key2total_count.end()) {
+        return it->second;
+    } else {
+        return 0;
+    }
+}
+
+uint64_t QuadCatalog::get_edge_property_count(ObjectId key) const
+{
+    std::shared_lock lock(mutex);
+    auto it = edge_key2total_count.find(key.id);
+    if (it != edge_key2total_count.end()) {
+        return it->second;
+    } else {
+        return 0;
+    }
+}
+
+uint64_t QuadCatalog::get_equal_from_to_edge_label_count(ObjectId label) const
+{
+    std::shared_lock lock(mutex);
+    auto it = edge_label2equal_from_to_count.find(label.id);
+    if (it != edge_label2equal_from_to_count.end()) {
+        return it->second;
+    } else {
+        return 0;
+    }
+}
+
+uint64_t QuadCatalog::get_node_labels_count() const
+{
+    return node_labels_count;
+}
+
+uint64_t QuadCatalog::get_edge_properties_count() const
+{
+    return edge_properties_count;
+}
+
+uint64_t QuadCatalog::get_node_properties_count() const
+{
+    return node_properties_count;
+}
+
+uint64_t QuadCatalog::get_equal_from_to_edge_count() const
+{
+    return equal_from_to_count;
+}

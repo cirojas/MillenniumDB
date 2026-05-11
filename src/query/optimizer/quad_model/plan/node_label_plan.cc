@@ -7,6 +7,7 @@
 #include "storage/index/leapfrog/leapfrog_bpt_iter.h"
 
 using namespace std;
+using namespace MQL;
 
 NodeLabelPlan::NodeLabelPlan(Id node, ObjectId label) :
     node(node),

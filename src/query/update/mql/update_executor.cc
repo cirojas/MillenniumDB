@@ -17,58 +17,57 @@ uint64_t UpdateExecutor::execute()
     auto& catalog = quad_model.catalog;
     auto& ctx = *update_context;
 
-    int64_t total_labels = 0;
-    int64_t total_properties = 0;
-    int64_t total_equal_from_to_count = 0;
+    int64_t diff_node_labels = 0;
+    int64_t diff_node_properties = 0;
+    int64_t diff_edge_properties = 0;
+    int64_t diff_equal_from_to = 0;
 
     // TODO: rethink catalog update, avoid unsafe operations in maps, remember we can have multiple reads at the time?
-    // for (auto&& [label, count] : ctx.label2total_count) {
-    //     total_labels += count;
-    //     catalog.label2total_count[label] += count;
-    // }
+    for (auto&& [label, diff] : ctx.node_label2total_diff) {
+        if (diff != 0) {
+            diff_node_labels += diff;
+            catalog.update_node_label_count(label, diff);
+        }
+    }
+    for (auto&& [edge_label, diff] : ctx.edge_label2total_diff) {
+        if (diff != 0) {
+            diff_edge_properties += diff;
+            catalog.update_edge_label_count(edge_label, diff);
+        }
+    }
+    for (auto&& [edge_label, diff] : ctx.edge_label2equal_from_to_diff) {
+        if (diff != 0) {
+            diff_equal_from_to += diff;
+            catalog.update_equal_from_to_label_count(edge_label, diff);
+        }
+    }
+    for (auto&& [key, diff] : ctx.node_key2total_diff) {
+        if (diff != 0) {
+            diff_node_properties += diff;
+            catalog.update_node_key_count(key, diff);
+        }
+    }
+    for (auto&& [key, diff] : ctx.edge_key2total_diff) {
+        if (diff != 0) {
+            diff_edge_properties += diff;
+            catalog.update_edge_key_count(key, diff);
+        }
+    }
 
-    // for (auto&& [key, count] : ctx.key2total_count) {
-    //     total_properties += count;
-    //     catalog.key2total_count[key] += count;
-    // }
+    catalog.update_max_anon(ctx.current_anon);
+    catalog.update_max_edge(ctx.current_edge);
 
-    // for (auto&& [edge_type, count] : ctx.type2total_count) {
-    //     catalog.type2total_count[edge_type] += count;
-    // }
+    catalog.update_deleted_edges(update_context->deleted_edges);
 
-    // for (auto&& [edge_type, count] : ctx.type2equal_from_to_count) {
-    //     total_equal_from_to_count += count;
-    //     catalog.type2equal_from_to_count[edge_type] += count;
-    // }
-    // for (auto&& [edge_type, count] : ctx.type2equal_from_type_count) {
-    //     total_equal_from_type_count += count;
-    //     catalog.type2equal_from_type_count[edge_type] += count;
-    // }
-    // for (auto&& [edge_type, count] : ctx.type2equal_to_type_count) {
-    //     total_equal_to_type_count += count;
-    //     catalog.type2equal_to_type_count[edge_type] += count;
-    // }
-    // for (auto&& [edge_type, count] : ctx.type2equal_from_to_type_count) {
-    //     total_equal_from_to_type_count += count;
-    //     catalog.type2equal_from_to_type_count[edge_type] += count;
-    // }
+    assert(diff_node_labels == ctx.new_node_labels - ctx.deleted_node_labels);
+    assert(diff_node_properties == ctx.new_node_properties - ctx.deleted_node_properties);
+    assert(diff_edge_properties == ctx.new_edge_properties - ctx.deleted_edge_properties);
 
-    // catalog.max_anon = ctx.current_anon;
-    // catalog.max_edge = ctx.current_edge;
-
-    // catalog.deleted_edges += update_context->deleted_edges;
-
-    // assert(total_labels == ctx.new_labels - ctx.deleted_labels);
-    // assert(total_properties == ctx.new_properties - ctx.deleted_properties);
-
-    // catalog.nodes_count += ctx.new_nodes - ctx.deleted_nodes;
-    // catalog.label_count += total_labels;
-    // catalog.properties_count += total_properties;
-
-    // catalog.equal_from_to_count += total_equal_from_to_count;
-    // catalog.equal_from_type_count += total_equal_from_type_count;
-    // catalog.equal_to_type_count += total_equal_to_type_count;
-    // catalog.equal_from_to_type_count += total_equal_from_to_type_count;
+    catalog.update_nodes_count(ctx.new_nodes - ctx.deleted_nodes);
+    catalog.update_nodes_labels_count(diff_node_labels);
+    catalog.update_nodes_properties_count(diff_node_properties);
+    catalog.update_edge_properties_count(diff_edge_properties);
+    catalog.update_equal_from_to_count(diff_equal_from_to);
 
     return 0;
 }
@@ -90,12 +89,16 @@ void UpdateExecutor::analyze(std::ostream& os, bool print_stats, int) const
         os << s << "\"new_edges\": " << update_context->new_edges;
         s[0] = ',';
     }
-    if (update_context->new_labels) {
-        os << s << "\"new_labels\": " << update_context->new_labels;
+    if (update_context->new_node_labels) {
+        os << s << "\"new_node_labels\": " << update_context->new_node_labels;
         s[0] = ',';
     }
-    if (update_context->new_properties) {
-        os << s << "\"new_properties\": " << update_context->new_properties;
+    if (update_context->new_node_properties) {
+        os << s << "\"new_node_properties\": " << update_context->new_node_properties;
+        s[0] = ',';
+    }
+    if (update_context->new_edge_properties) {
+        os << s << "\"new_edge_properties\": " << update_context->new_edge_properties;
         s[0] = ',';
     }
     if (update_context->deleted_nodes) {
@@ -106,16 +109,24 @@ void UpdateExecutor::analyze(std::ostream& os, bool print_stats, int) const
         os << s << "\"deleted_edges\": " << update_context->deleted_edges;
         s[0] = ',';
     }
-    if (update_context->deleted_labels) {
-        os << s << "\"deleted_labels\": " << update_context->deleted_labels;
+    if (update_context->deleted_node_labels) {
+        os << s << "\"deleted_node_labels\": " << update_context->deleted_node_labels;
         s[0] = ',';
     }
-    if (update_context->deleted_properties) {
-        os << s << "\"deleted_properties\": " << update_context->deleted_properties;
+    if (update_context->deleted_node_properties) {
+        os << s << "\"deleted_node_properties\": " << update_context->deleted_node_properties;
         s[0] = ',';
     }
-    if (update_context->overwritten_properties) {
-        os << s << "\"overwritten_properties\": " << update_context->overwritten_properties;
+    if (update_context->deleted_edge_properties) {
+        os << s << "\"deleted_edge_properties\": " << update_context->deleted_edge_properties;
+        s[0] = ',';
+    }
+    if (update_context->overwritten_node_properties) {
+        os << s << "\"overwritten_node_properties\": " << update_context->overwritten_node_properties;
+        s[0] = ',';
+    }
+    if (update_context->overwritten_edge_properties) {
+        os << s << "\"overwritten_edge_properties\": " << update_context->overwritten_edge_properties;
         s[0] = ',';
     }
     os << "}";

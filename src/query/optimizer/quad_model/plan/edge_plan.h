@@ -2,6 +2,7 @@
 
 #include "query/optimizer/plan/plan.h"
 
+namespace MQL {
 class EdgePlan : public Plan {
 public:
     EdgePlan(Id from, Id to, Id label, Id edge);
@@ -54,3 +55,4 @@ private:
     bool label_assigned;
     bool edge_assigned;
 };
+} // namespace MQL

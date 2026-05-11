@@ -2,6 +2,8 @@
 
 #include "query/optimizer/plan/plan.h"
 
+namespace MQL {
+
 class DisjointNodePlan : public Plan {
 public:
     DisjointNodePlan(const VarId object_var) :
@@ -44,3 +46,4 @@ public:
 private:
     const VarId object_var;
 };
+} // namespace MQL

@@ -2,6 +2,7 @@
 
 #include "query/optimizer/plan/plan.h"
 
+namespace MQL {
 class NodeLabelPlan : public Plan {
 public:
     NodeLabelPlan(Id node, ObjectId label);
@@ -44,3 +45,4 @@ private:
 
     bool node_assigned;
 };
+} // namespace MQL

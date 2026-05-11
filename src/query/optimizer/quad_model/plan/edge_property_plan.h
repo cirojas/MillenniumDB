@@ -2,6 +2,7 @@
 
 #include "query/optimizer/plan/plan.h"
 
+namespace MQL {
 class EdgePropertyPlan : public Plan {
 public:
     EdgePropertyPlan(Id edge, ObjectId key, Id value);
@@ -49,3 +50,4 @@ private:
     bool edge_assigned;
     bool value_assigned;
 };
+} // namespace MQL

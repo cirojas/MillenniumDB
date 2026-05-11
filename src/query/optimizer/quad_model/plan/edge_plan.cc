@@ -7,6 +7,7 @@
 #include "storage/index/leapfrog/leapfrog_bpt_iter.h"
 
 using namespace std;
+using namespace MQL;
 
 EdgePlan::EdgePlan(Id from, Id to, Id label, Id edge) :
     from(from),

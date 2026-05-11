@@ -32,17 +32,13 @@ inline uint64_t unpack_edge(ObjectId oid)
     return oid.get_value();
 }
 
-/*inline*/ ObjectId get_key_id(const std::string& str); // TODO:
+ObjectId get_key_id(const std::string& str);
+ObjectId get_node_label_id(const std::string& str);
+ObjectId get_edge_label_id(const std::string& str);
 
-/*inline*/ ObjectId get_node_label_id(const std::string& str); // TODO:
-
-/*inline*/ ObjectId get_edge_label_id(const std::string& str); // TODO:
-
-/*inline*/ const std::string& get_key(ObjectId); // TODO:
-
-/*inline*/ const std::string& get_node_label(ObjectId); // TODO:
-
-/*inline*/ const std::string& get_edge_label(ObjectId); // TODO:
+std::string get_key(ObjectId);
+std::string get_node_label(ObjectId);
+std::string get_edge_label(ObjectId);
 
 // Compress a UUID string (36 chars, lowercase, with dashes) into 16 bytes.
 // out must have space for at least 16 bytes.
@@ -374,10 +370,9 @@ inline std::string to_lexical_str(ObjectId oid)
     case ObjectType::PropertyKey:
         return Conversions::get_key(oid);
     case ObjectType::EdgeLabel:
+        return Conversions::get_edge_label(oid);
     case ObjectType::NodeLabel:
-        // TODO:
-        int TODO;
-        return "TODO: to_lexical_str";
+        return Conversions::get_node_label(oid);
     case ObjectType::Path:
     case ObjectType::Null:
     case ObjectType::DoubleExt:

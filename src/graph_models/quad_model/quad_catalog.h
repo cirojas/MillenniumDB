@@ -1,11 +1,12 @@
 #pragma once
 
-#include <ostream>
-#include <string>
-
 #include "storage/catalog/catalog.h"
 #include "storage/index/hnsw/hnsw_index_manager.h"
 #include "storage/index/text_search/text_index_manager.h"
+
+#include <ostream>
+#include <string>
+#include <shared_mutex>
 
 namespace Import { namespace QuadModel {
 class OnDiskImport;
@@ -19,6 +20,8 @@ class QuadCatalog : public Catalog {
     friend class Import::QuadModel::CSV::OnDiskImport;
 
 private:
+    mutable std::shared_mutex mutex;
+
     // existing edges is max_edge minus deleted_edges
     uint64_t deleted_edges;
 
@@ -48,13 +51,13 @@ private:
 
 public:
     static constexpr uint8_t MODEL_ID = 0;
-    static constexpr uint8_t MAJOR_VERSION = 4;
+    static constexpr uint8_t MAJOR_VERSION = 5;
     static constexpr uint8_t MINOR_VERSION = 0;
 
     TextSearch::TextIndexManager text_index_manager;
     HNSW::HNSWIndexManager hnsw_index_manager;
 
-        // there may be gaps in anons, this number is the upper bound
+    // there may be gaps in anons, this number is the upper bound
     // meaning each anon is strictly less this this number
     uint64_t max_anon;
 
@@ -64,12 +67,12 @@ public:
 
     QuadCatalog(const std::string& filename);
 
-    ~QuadCatalog();
+    // ~QuadCatalog();
 
     void print(std::ostream&) const;
     // void save();
 
-    bool index_name_exists(const std::string& index_name) const;
+    bool index_name_exists(const std::string& index_name);
 
     // return how many edges are in the database
     // TODO: is this completely accurate or an estimate that can be wrong if concurrent update
@@ -87,20 +90,13 @@ public:
         return nodes_count;
     }
 
-    // auto it = quad_model.catalog.edge_label2equal_from_to_count.find(label.get_OID().id);
-    // if (it != quad_model.catalog.edge_label2equal_from_to_count.end()) {
-    //     auto count = static_cast<double>(it->second);
-    //     return count / heuristic_divisor;
-    // } else {
-    //     return 0;
-    // }
-    // auto it = quad_model.catalog.edge_label2total_count.find(label.get_OID().id);
-    // if (it != quad_model.catalog.edge_label2total_count.end()) {
-    //     auto count = static_cast<double>(it->second);
-    //     return count / heuristic_divisor;
-    // } else {
-    //     return 0;
-    // }
+    std::string get_key(uint64_t id);
+    std::string get_node_label(uint64_t id);
+    std::string get_edge_label(uint64_t id);
+
+    uint64_t get_key_id(const std::string& str);
+    uint64_t get_node_label_id(const std::string& str);
+    uint64_t get_edge_label_id(const std::string& str);
 
     uint64_t get_edge_label_count(ObjectId label) const;
     uint64_t get_node_label_count(ObjectId label) const;
@@ -112,6 +108,22 @@ public:
     uint64_t get_edge_properties_count() const;
     uint64_t get_node_properties_count() const;
     uint64_t get_equal_from_to_edge_count() const;
+
+    void update_node_key_count(uint64_t key, int diff);
+    void update_edge_key_count(uint64_t key, int diff);
+    void update_node_label_count(uint64_t label, int diff);
+    void update_edge_label_count(uint64_t label, int diff);
+    void update_equal_from_to_label_count(uint64_t label, int diff);
+
+    void update_max_anon(int new_value);
+    void update_max_edge(int new_value);
+    void update_deleted_edges(int diff);
+
+    void update_nodes_count(int diff);
+    void update_nodes_labels_count(int diff);
+    void update_nodes_properties_count(int diff);
+    void update_edge_properties_count(int diff);
+    void update_equal_from_to_count(int diff);
 
     // TODO: use something like this to create catalog at import
     static void create_new_catalog();

@@ -4,6 +4,8 @@
 #include "query/executor/binding_iter/index_scan.h"
 #include "query/executor/binding_iter/scan_ranges/unassigned_var.h"
 
+using namespace MQL;
+
 double DisjointNodePlan::estimate_cost() const
 {
     return /*100.0 +*/ estimate_output_size();

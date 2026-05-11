@@ -2,6 +2,7 @@
 
 #include "query/optimizer/plan/plan.h"
 
+namespace MQL {
 class NodePropertyPlan : public Plan {
 public:
     NodePropertyPlan(Id node, ObjectId key, Id value);
@@ -48,3 +49,4 @@ private:
     bool node_assigned;
     bool value_assigned;
 };
+} // namespace MQL

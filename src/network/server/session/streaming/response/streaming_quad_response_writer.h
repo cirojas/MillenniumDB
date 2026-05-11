@@ -119,10 +119,23 @@ public:
             const auto list = MQL::Conversions::unpack_list(oid);
             return write_list(list);
         }
-        case ObjectSubType::PGMetaData:
-            // TODO:
-            int TODO;
+        case ObjectSubType::PGMetaData: {
+            switch (oid.type()) {
+            case ObjectType::PropertyKey:
+                write_typed_string(MQL::Conversions::get_key(oid), Protocol::DataType::STRING);
+                break;
+            case ObjectType::EdgeLabel:
+                write_typed_string(MQL::Conversions::get_edge_label(oid), Protocol::DataType::STRING);
+                break;
+            case ObjectType::NodeLabel:
+                write_typed_string(MQL::Conversions::get_node_label(oid), Protocol::DataType::STRING);
+                break;
+            default:
+                assert(false);
+                break;
+            }
             return;
+        }
         case ObjectSubType::StringXsd:
         case ObjectSubType::StringLang:
         case ObjectSubType::StringDatatype:

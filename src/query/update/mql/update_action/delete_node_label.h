@@ -27,7 +27,7 @@ public:
         auto node_id = transform_if_tmp(node_).id;
         auto label_id = ctx.get_node_label_id(label);
 
-        ctx.delete_label(node_id, label_id);
+        ctx.delete_node_label(node_id, label_id);
     }
 
     void print(std::ostream& os, int indent) const override
