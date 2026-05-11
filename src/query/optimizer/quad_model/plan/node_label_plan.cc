@@ -2,16 +2,16 @@
 
 #include "graph_models/quad_model/quad_model.h"
 #include "query/executor/binding_iter/index_scan.h"
+#include "query/executor/binding_iter/scan_ranges/term.h"
 #include "query/query_context.h"
 #include "storage/index/leapfrog/leapfrog_bpt_iter.h"
 
 using namespace std;
 
-NodeLabelPlan::NodeLabelPlan(Id node, Id label) :
+NodeLabelPlan::NodeLabelPlan(Id node, ObjectId label) :
     node(node),
     label(label),
-    node_assigned(node.is_OID()),
-    label_assigned(label.is_OID())
+    node_assigned(node.is_OID())
 { }
 
 void NodeLabelPlan::print(std::ostream& os, int indent) const
@@ -38,44 +38,30 @@ double NodeLabelPlan::estimate_cost() const
 
 double NodeLabelPlan::estimate_output_size() const
 {
-    const auto total_nodes = static_cast<double>(quad_model.catalog.nodes_count);
-
-    auto total_labels = static_cast<double>(quad_model.catalog.node_labels_count);
+    double total_nodes = quad_model.catalog.get_nodes_count();
+    // double total_labels = quad_model.catalog.get_node_labels_count();
 
     if (total_nodes == 0) { // to avoid division by 0
         return 0;
     }
 
-    if (label_assigned) {
-        double label_count = 0;
-        if (label.is_OID()) {
-            auto it = quad_model.catalog.node_label2total_count.find(label.get_OID().id);
-            if (it != quad_model.catalog.node_label2total_count.end()) {
-                label_count = static_cast<double>(it->second);
-            }
-        } else {
-            // TODO: this case (label is an assigned variable) is not possible yet, but we may need to cover it in the future
-            return 0;
-        }
+    // double label_count = 0;
+    // auto it = quad_model.catalog.node_label2total_count.find(label.get_OID().id);
+    // if (it != quad_model.catalog.node_label2total_count.end()) {
+    //     label_count = static_cast<double>(it->second);
+    // }
+    double label_count = quad_model.catalog.get_node_label_count(label);
 
-        if (node_assigned) {
-            return label_count / total_nodes;
-        } else {
-            return label_count;
-        }
+    if (node_assigned) {
+        return label_count / total_nodes;
     } else {
-        if (node_assigned) {
-            return total_labels / total_nodes;
-        } else {
-            return total_nodes;
-        }
+        return label_count;
     }
 }
 
 void NodeLabelPlan::set_input_vars(const std::set<VarId>& input_vars)
 {
     set_input_var(input_vars, node, &node_assigned);
-    set_input_var(input_vars, label, &label_assigned);
 }
 
 // Must be consistent with the index scan returned in get_binding_iter()
@@ -84,9 +70,6 @@ std::set<VarId> NodeLabelPlan::get_vars() const
     std::set<VarId> result;
     if (node.is_var() && !node_assigned) {
         result.insert(node.get_var());
-    }
-    if (label.is_var() && !label_assigned) {
-        result.insert(label.get_var());
     }
 
     return result;
@@ -105,15 +88,15 @@ std::set<VarId> NodeLabelPlan::get_vars() const
 unique_ptr<BindingIter> NodeLabelPlan::get_binding_iter() const
 {
     array<unique_ptr<ScanRange>, 2> ranges;
-    if (node_assigned) {
-        ranges[0] = ScanRange::get(node, node_assigned);
-        ranges[1] = ScanRange::get(label, label_assigned);
-        return make_unique<IndexScan<2>>(*quad_model.node_label, std::move(ranges));
-    } else {
-        ranges[0] = ScanRange::get(label, label_assigned);
-        ranges[1] = ScanRange::get(node, node_assigned);
-        return make_unique<IndexScan<2>>(*quad_model.label_node, std::move(ranges));
-    }
+    // if (node_assigned) {
+    //     ranges[0] = ScanRange::get(node, node_assigned);
+    //     ranges[1] = std::make_unique<Term>(label);
+    //     return make_unique<IndexScan<2>>(*quad_model.node_label, std::move(ranges));
+    // } else {
+    ranges[0] = std::make_unique<Term>(label);
+    ranges[1] = ScanRange::get(node, node_assigned);
+    return make_unique<IndexScan<2>>(*quad_model.label_node, std::move(ranges));
+    // }
 }
 
 bool NodeLabelPlan::get_leapfrog_iter(
@@ -137,20 +120,13 @@ bool NodeLabelPlan::get_leapfrog_iter(
     }
 
     // Assign label_index
-    if (label.is_OID() || label_assigned) {
-        label_index = -1;
-    } else {
-        label_index = INT32_MAX;
-    }
+    label_index = -1;
 
     // search for vars marked as enumeration (INT32_MAX) that are intersection
     // and assign them the correct index
     for (size_t i = 0; i < enumeration_level; i++) {
         if (node_index == INT32_MAX && node.get_var() == var_order[i]) {
             node_index = i;
-        }
-        if (label_index == INT32_MAX && label.get_var() == var_order[i]) {
-            label_index = i;
         }
     }
 
@@ -166,35 +142,35 @@ bool NodeLabelPlan::get_leapfrog_iter(
     };
 
     // node_label
-    if (node_index <= label_index) {
-        assign(node_index, node);
-        assign(label_index, label);
+    // if (node_index <= label_index) {
+    //     assign(node_index, node);
+    //     assign(label_index, label);
 
-        leapfrog_iters.push_back(
-            make_unique<LeapfrogBptIter<2>>(
-                &get_query_ctx().thread_info.interruption_requested,
-                *quad_model.node_label,
-                std::move(initial_ranges),
-                std::move(intersection_vars),
-                std::move(enumeration_vars)
-            )
-        );
-        return true;
-    }
-    // to_type_from_edge
-    else {
-        assign(label_index, label);
-        assign(node_index, node);
+    //     leapfrog_iters.push_back(
+    //         make_unique<LeapfrogBptIter<2>>(
+    //             &get_query_ctx().thread_info.interruption_requested,
+    //             *quad_model.node_label,
+    //             std::move(initial_ranges),
+    //             std::move(intersection_vars),
+    //             std::move(enumeration_vars)
+    //         )
+    //     );
+    //     return true;
+    // }
+    // // label_node
+    // else {
+    assign(label_index, label);
+    assign(node_index, node);
 
-        leapfrog_iters.push_back(
-            make_unique<LeapfrogBptIter<2>>(
-                &get_query_ctx().thread_info.interruption_requested,
-                *quad_model.label_node,
-                std::move(initial_ranges),
-                std::move(intersection_vars),
-                std::move(enumeration_vars)
-            )
-        );
-        return true;
-    }
+    leapfrog_iters.push_back(
+        make_unique<LeapfrogBptIter<2>>(
+            &get_query_ctx().thread_info.interruption_requested,
+            *quad_model.label_node,
+            std::move(initial_ranges),
+            std::move(intersection_vars),
+            std::move(enumeration_vars)
+        )
+    );
+    return true;
+    // }
 }

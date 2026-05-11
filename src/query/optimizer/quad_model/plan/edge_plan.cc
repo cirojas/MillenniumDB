@@ -50,7 +50,7 @@ double EdgePlan::estimate_cost() const
 
 double EdgePlan::estimate_output_size() const
 {
-    const double total_connections = quad_model.catalog.edge_count();
+    const double total_connections = quad_model.catalog.get_edges_count();
 
     double heuristic_divisor = 1.0;
 
@@ -68,28 +68,18 @@ double EdgePlan::estimate_output_size() const
     // check for special cases
     if (from == to) {
         if (label.is_OID()) {
-            auto it = quad_model.catalog.edge_label2equal_from_to_count.find(label.get_OID().id);
-            if (it != quad_model.catalog.edge_label2equal_from_to_count.end()) {
-                auto count = static_cast<double>(it->second);
-                return count / heuristic_divisor;
-            } else {
-                return 0;
-            }
+            double edge_label_count = quad_model.catalog.get_equal_from_to_edge_label_count(label.get_OID());
+            return edge_label_count / heuristic_divisor;
         } else {
-            double count = quad_model.catalog.equal_from_to_count;
+            double count = quad_model.catalog.get_equal_from_to_edge_count();
             return count / heuristic_divisor;
         }
     }
 
     if (label_assigned) {
         if (label.is_OID()) {
-            auto it = quad_model.catalog.edge_label2total_count.find(label.get_OID().id);
-            if (it != quad_model.catalog.edge_label2total_count.end()) {
-                auto count = static_cast<double>(it->second);
-                return count / heuristic_divisor;
-            } else {
-                return 0;
-            }
+            double edge_label_count = quad_model.catalog.get_edge_label_count(label.get_OID());
+            return edge_label_count / heuristic_divisor;
         } else {
             return total_connections / heuristic_divisor;
         }

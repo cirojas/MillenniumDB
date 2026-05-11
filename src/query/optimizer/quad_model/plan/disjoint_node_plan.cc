@@ -25,7 +25,7 @@ void DisjointNodePlan::print(std::ostream& os, int indent) const
 
 double DisjointNodePlan::estimate_output_size() const
 {
-    return quad_model.catalog.edge_count() + quad_model.catalog.nodes_count;
+    return quad_model.catalog.get_edges_count() + quad_model.catalog.get_nodes_count();
 }
 
 std::set<VarId> DisjointNodePlan::get_vars() const

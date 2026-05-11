@@ -4,8 +4,6 @@
 #include <ostream>
 
 // clang-format off
-
-
 enum class ObjectType : uint8_t {
     Null              = 0x00, // 0b000000'00
 

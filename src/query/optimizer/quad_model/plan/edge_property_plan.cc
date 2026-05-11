@@ -4,17 +4,17 @@
 
 #include "graph_models/quad_model/quad_model.h"
 #include "query/executor/binding_iter/index_scan.h"
+#include "query/executor/binding_iter/scan_ranges/term.h"
 #include "query/query_context.h"
 #include "storage/index/leapfrog/leapfrog_bpt_iter.h"
 
 using namespace std;
 
-EdgePropertyPlan::EdgePropertyPlan(Id edge, Id key, Id value) :
+EdgePropertyPlan::EdgePropertyPlan(Id edge, ObjectId key, Id value) :
     edge(edge),
     key(key),
     value(value),
     edge_assigned(edge.is_OID()),
-    key_assigned(key.is_OID()),
     value_assigned(value.is_OID())
 { }
 
@@ -43,55 +43,25 @@ double EdgePropertyPlan::estimate_cost() const
 
 double EdgePropertyPlan::estimate_output_size() const
 {
-    const auto total_edges = static_cast<double>(quad_model.catalog.edge_count());
+    auto total_edges = static_cast<double>(quad_model.catalog.get_edges_count());
+    auto total_properties = static_cast<double>(quad_model.catalog.get_edge_properties_count());
+    auto properties_with_key = quad_model.catalog.get_edge_property_count(key);
 
-    const auto total_properties = static_cast<double>(quad_model.catalog.edge_properties_count);
-
-    assert((key_assigned || !value_assigned) && "fixed values with open key is not supported");
-
-    if (total_edges == 0) { // To avoid division by 0
+    if (total_edges == 0 || total_properties == 0) {
+         // To avoid division by 0
         return 0;
     }
-
-    if (key_assigned) {
-        double total_values = 0;
-        double key_count = 0;
-        if (key.is_OID()) {
-            auto it = quad_model.catalog.edge_key2total_count.find(key.get_OID().id);
-            if (it != quad_model.catalog.edge_key2total_count.end()) {
-                total_values = it->second;
-            }
-
-            it = quad_model.catalog.edge_key2total_count.find(key.get_OID().id);
-            if (it != quad_model.catalog.edge_key2total_count.end()) {
-                key_count = it->second;
-            }
+    if (value_assigned) {
+        if (edge_assigned) {
+            return properties_with_key / (total_properties * total_edges);
         } else {
-            // TODO: this case (key is an assigned variable) is not possible yet, but we may need to cover it in the future
-            return 0;
-        }
-
-        if (total_values == 0) { // To avoid division by 0
-            return 0;
-        }
-        if (value_assigned) {
-            if (edge_assigned) {
-                return key_count / (total_values * total_edges);
-            } else {
-                return key_count / total_values;
-            }
-        } else {
-            if (edge_assigned) {
-                return key_count / total_edges;
-            } else {
-                return key_count;
-            }
+            return properties_with_key / total_properties;
         }
     } else {
         if (edge_assigned) {
-            return total_properties / total_edges; // key and value not assigned
+            return properties_with_key / total_edges;
         } else {
-            return total_properties; // nothing assigned
+            return properties_with_key;
         }
     }
 }
@@ -99,7 +69,6 @@ double EdgePropertyPlan::estimate_output_size() const
 void EdgePropertyPlan::set_input_vars(const std::set<VarId>& input_vars)
 {
     set_input_var(input_vars, edge, &edge_assigned);
-    set_input_var(input_vars, key, &key_assigned);
     set_input_var(input_vars, value, &value_assigned);
 }
 
@@ -108,9 +77,6 @@ std::set<VarId> EdgePropertyPlan::get_vars() const
     std::set<VarId> result;
     if (edge.is_var() && !edge_assigned) {
         result.insert(edge.get_var());
-    }
-    if (key.is_var() && !key_assigned) {
-        result.insert(key.get_var());
     }
     if (value.is_var() && !value_assigned) {
         result.insert(value.get_var());
@@ -137,15 +103,13 @@ unique_ptr<BindingIter> EdgePropertyPlan::get_binding_iter() const
 {
     array<unique_ptr<ScanRange>, 3> ranges;
 
-    assert((key_assigned || !value_assigned) && "fixed values with open key is not supported");
-
     if (edge_assigned) {
         ranges[0] = ScanRange::get(edge, edge_assigned);
-        ranges[1] = ScanRange::get(key, key_assigned);
+        ranges[1] = std::make_unique<Term>(key);
         ranges[2] = ScanRange::get(value, value_assigned);
         return make_unique<IndexScan<3>>(*quad_model.edge_key_value, std::move(ranges));
     } else {
-        ranges[0] = ScanRange::get(key, key_assigned);
+        ranges[0] = std::make_unique<Term>(key);
         ranges[1] = ScanRange::get(value, value_assigned);
         ranges[2] = ScanRange::get(edge, edge_assigned);
         return make_unique<IndexScan<3>>(*quad_model.key_value_edge, std::move(ranges));
@@ -172,12 +136,7 @@ bool EdgePropertyPlan::get_leapfrog_iter(
         edge_index = INT32_MAX;
     }
 
-    // Assign key_index
-    if (key.is_OID() || key_assigned) {
-        key_index = -1;
-    } else {
-        key_index = INT32_MAX;
-    }
+    key_index = -1;
 
     // Assign value_index
     if (value.is_OID() || value_assigned) {
@@ -191,9 +150,6 @@ bool EdgePropertyPlan::get_leapfrog_iter(
     for (size_t i = 0; i < enumeration_level; i++) {
         if (edge_index == INT32_MAX && edge.get_var() == var_order[i]) {
             edge_index = i;
-        }
-        if (key_index == INT32_MAX && key.get_var() == var_order[i]) {
-            key_index = i;
         }
         if (value_index == INT32_MAX && value.get_var() == var_order[i]) {
             value_index = i;

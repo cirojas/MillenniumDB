@@ -4,13 +4,12 @@
 
 class NodeLabelPlan : public Plan {
 public:
-    NodeLabelPlan(Id node, Id label);
+    NodeLabelPlan(Id node, ObjectId label);
 
     NodeLabelPlan(const NodeLabelPlan& other) :
         node(other.node),
         label(other.label),
-        node_assigned(other.node_assigned),
-        label_assigned(other.label_assigned)
+        node_assigned(other.node_assigned)
     { }
 
     std::unique_ptr<Plan> clone() const override
@@ -41,8 +40,7 @@ public:
 
 private:
     Id node;
-    Id label;
+    ObjectId label;
 
     bool node_assigned;
-    bool label_assigned;
 };

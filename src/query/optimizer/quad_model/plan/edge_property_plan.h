@@ -4,14 +4,14 @@
 
 class EdgePropertyPlan : public Plan {
 public:
-    EdgePropertyPlan(Id edge, Id key, Id value);
+    EdgePropertyPlan(Id edge, ObjectId key, Id value);
 
     EdgePropertyPlan(const EdgePropertyPlan& other) :
         edge(other.edge),
         key(other.key),
         value(other.value),
         edge_assigned(other.edge_assigned),
-        key_assigned(other.key_assigned),
+        // key_assigned(other.key_assigned),
         value_assigned(other.value_assigned)
     { }
 
@@ -43,10 +43,9 @@ public:
 
 private:
     Id edge;
-    Id key;
+    ObjectId key;
     Id value;
 
     bool edge_assigned;
-    bool key_assigned;
     bool value_assigned;
 };

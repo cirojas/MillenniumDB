@@ -4,14 +4,13 @@
 
 class NodePropertyPlan : public Plan {
 public:
-    NodePropertyPlan(Id node, Id key, Id value);
+    NodePropertyPlan(Id node, ObjectId key, Id value);
 
     NodePropertyPlan(const NodePropertyPlan& other) :
         node(other.node),
         key(other.key),
         value(other.value),
         node_assigned(other.node_assigned),
-        key_assigned(other.key_assigned),
         value_assigned(other.value_assigned)
     { }
 
@@ -43,10 +42,9 @@ public:
 
 private:
     Id node;
-    Id key;
+    ObjectId key;
     Id value;
 
     bool node_assigned;
-    bool key_assigned;
     bool value_assigned;
 };
