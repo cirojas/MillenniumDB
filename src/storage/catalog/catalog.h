@@ -62,7 +62,7 @@ protected:
 
     boost::unordered_flat_map<std::string, uint64_t> convert_strvec_to_map(const std::vector<std::string>& strvec);
 
-private:
+protected:
     std::fstream file;
 
     std::string file_path;

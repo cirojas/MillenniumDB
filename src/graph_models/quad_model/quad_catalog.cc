@@ -1,13 +1,88 @@
 #include "quad_catalog.h"
 
-// #include "query/exceptions.h"
+#include "query/exceptions.h"
+
+#include <mutex>
 // #include "storage/index/text_search/quad.h"
 
 // using namespace std;
 
-// QuadCatalog::QuadCatalog(const std::string& filename) :
-//     Catalog(filename)
-// {
+enum class CatalogInfo {
+    node_label = 1, // <label_id, strlen, label_str>
+    edge_label = 2, // <label_id, strlen, label_str>
+    key = 3, //  <key_id, strlen, label_str>
+    node_label_stat = 4, // <label_id, count>
+    edge_label_stat = 5, // <label_id, count>
+    equal_from_to_stat = 6, // <label_id, count>
+    node_key_stat = 7, // <key_id, count>
+    edge_key_stat = 8, // <key_id, count>
+    hnsw_index = 9, // <idx_name_len, idx_name, norm_type, token_type, pred_id, pred_len, pred_str>
+    text_index = 10, // <idx_name_len, idx_name, metric_type, pred_len, pred_str>
+};
+
+//         const auto text_index_name2metadata_size = read_uint64();
+//         for (uint_fast32_t i = 0; i < text_index_name2metadata_size; ++i) {
+//             const auto name = read_string();
+//             TextSearch::TextIndexManager::TextIndexMetadata metadata;
+//             metadata.normalization_type = static_cast<TextSearch::NORMALIZE_TYPE>(read_uint8());
+//             metadata.tokenization_type = static_cast<TextSearch::TOKENIZE_TYPE>(read_uint8());
+//             metadata.predicate_id = ObjectId(read_uint64());
+//             metadata.predicate = read_string();
+//             text_index_manager.load_text_index(name, metadata);
+//         }
+
+//         hnsw_index_manager.init();
+//         const auto hnsw_index_name2metadata_size = read_uint64();
+//         for (uint_fast32_t i = 0; i < hnsw_index_name2metadata_size; ++i) {
+//             const auto name = read_string();
+//             HNSW::HNSWIndexManager::HNSWIndexMetadata metadata;
+//             metadata.metric_type = static_cast<HNSW::MetricType>(read_uint8());
+//             metadata.predicate = read_string();
+//             hnsw_index_manager.load_hnsw_index(name, metadata);
+//         }
+
+QuadCatalog::QuadCatalog(const std::string& filename) :
+    Catalog(filename)
+{
+    if (is_empty()) {
+        // TODO: allow empty catalog?
+    } else {
+        auto diff_minor_version = check_version("Quad", MODEL_ID, MAJOR_VERSION, MINOR_VERSION);
+
+        if (diff_minor_version != 0) {
+            throw LogicException("Undefined catalog recovery");
+        }
+
+        max_anon = read_uint64();
+        max_edge = read_uint64();
+        deleted_edges = read_uint64();
+
+        nodes_count = read_uint64();
+        node_labels_count = read_uint64();
+        node_properties_count = read_uint64();
+        edge_properties_count = read_uint64();
+        equal_from_to_count = read_uint64();
+
+        // TODO: reserve space in vectors
+
+        char byte;
+        while (file.get(byte)) {
+            switch (CatalogInfo(byte)) {
+            case CatalogInfo::node_label:
+            case CatalogInfo::edge_label:
+            case CatalogInfo::key:
+            case CatalogInfo::node_label_stat:
+            case CatalogInfo::edge_label_stat:
+            case CatalogInfo::equal_from_to_stat:
+            case CatalogInfo::node_key_stat:
+            case CatalogInfo::edge_key_stat:
+            case CatalogInfo::hnsw_index:
+            case CatalogInfo::text_index:
+                break;
+            }
+        }
+    }
+}
 //     if (is_empty()) {
 //         max_anon = 0;
 //         max_edge = 0;
@@ -254,7 +329,7 @@ std::string QuadCatalog::get_node_label(uint64_t id)
     std::shared_lock lock(mutex);
     std::string res;
     if (id < node_labels_str.size()) {
-        res = node_labels_str[id];
+        res = node_labels_str[id].str;
     }
     return res;
 }
@@ -269,45 +344,45 @@ std::string QuadCatalog::get_edge_label(uint64_t id)
     return res;
 }
 
-uint64_t QuadCatalog::get_key_id(const std::string& str)
+ObjectId QuadCatalog::get_key_id(const std::string& str)
 {
     std::shared_lock lock(mutex);
     auto it = keys2id.find(str);
     if (it != keys2id.end()) {
-        return it->second;
+        return ObjectId(it->second | ObjectId::MASK_PROPERTY_KEY);
     } else {
-        return ObjectId::MASK_NOT_FOUND;
+        return ObjectId::get_not_found();
     }
 }
 
-uint64_t QuadCatalog::get_node_label_id(const std::string& str)
+ObjectId QuadCatalog::get_node_label_id(const std::string& str)
 {
     std::shared_lock lock(mutex);
     auto it = node_labels2id.find(str);
     if (it != node_labels2id.end()) {
-        return it->second;
+        return ObjectId(it->second | ObjectId::MASK_NODE_LABEL);
     } else {
-        return ObjectId::MASK_NOT_FOUND;
+        return ObjectId::get_not_found();
     }
 }
 
-uint64_t QuadCatalog::get_edge_label_id(const std::string& str)
+ObjectId QuadCatalog::get_edge_label_id(const std::string& str)
 {
     std::shared_lock lock(mutex);
     auto it = edge_labels2id.find(str);
     if (it != edge_labels2id.end()) {
-        return it->second;
+        return ObjectId(it->second | ObjectId::MASK_EDGE_LABEL);
     } else {
-        return ObjectId::MASK_NOT_FOUND;
+        return ObjectId::get_not_found();
     }
 }
 
 uint64_t QuadCatalog::get_edge_label_count(ObjectId label) const
 {
     std::shared_lock lock(mutex);
-    auto it = edge_label2total_count.find(label.id);
+    auto it = edge_label2total_count.find(label);
     if (it != edge_label2total_count.end()) {
-        return it->second;
+        return it->second.count;
     } else {
         return 0;
     }
@@ -316,9 +391,9 @@ uint64_t QuadCatalog::get_edge_label_count(ObjectId label) const
 uint64_t QuadCatalog::get_node_label_count(ObjectId label) const
 {
     std::shared_lock lock(mutex);
-    auto it = node_label2total_count.find(label.id);
+    auto it = node_label2total_count.find(label);
     if (it != node_label2total_count.end()) {
-        return it->second;
+        return it->second.count;
     } else {
         return 0;
     }
@@ -327,9 +402,9 @@ uint64_t QuadCatalog::get_node_label_count(ObjectId label) const
 uint64_t QuadCatalog::get_node_property_count(ObjectId key) const
 {
     std::shared_lock lock(mutex);
-    auto it = node_key2total_count.find(key.id);
+    auto it = node_key2total_count.find(key);
     if (it != node_key2total_count.end()) {
-        return it->second;
+        return it->second.count;
     } else {
         return 0;
     }
@@ -338,9 +413,9 @@ uint64_t QuadCatalog::get_node_property_count(ObjectId key) const
 uint64_t QuadCatalog::get_edge_property_count(ObjectId key) const
 {
     std::shared_lock lock(mutex);
-    auto it = edge_key2total_count.find(key.id);
+    auto it = edge_key2total_count.find(key);
     if (it != edge_key2total_count.end()) {
-        return it->second;
+        return it->second.count;
     } else {
         return 0;
     }
@@ -349,9 +424,9 @@ uint64_t QuadCatalog::get_edge_property_count(ObjectId key) const
 uint64_t QuadCatalog::get_equal_from_to_edge_label_count(ObjectId label) const
 {
     std::shared_lock lock(mutex);
-    auto it = edge_label2equal_from_to_count.find(label.id);
+    auto it = edge_label2equal_from_to_count.find(label);
     if (it != edge_label2equal_from_to_count.end()) {
-        return it->second;
+        return it->second.count;
     } else {
         return 0;
     }
@@ -375,4 +450,106 @@ uint64_t QuadCatalog::get_node_properties_count() const
 uint64_t QuadCatalog::get_equal_from_to_edge_count() const
 {
     return equal_from_to_count;
+}
+
+void QuadCatalog::update_max_anon(uint64_t new_value)
+{
+    max_anon = new_value;
+    // file.seekp(MAX_ANON_POS); // TODO:
+    file.write(reinterpret_cast<const char*>(&max_anon), sizeof(max_anon));
+}
+
+void QuadCatalog::update_max_edge(uint64_t new_value)
+{
+    max_edge = new_value;
+    // file.seekp(MAX_EDGE_POS); // TODO:
+    file.write(reinterpret_cast<const char*>(&max_edge), sizeof(max_edge));
+}
+
+void QuadCatalog::update_node_key_count(ObjectId key, int diff)
+{
+    std::unique_lock lock(mutex);
+    // TODO:
+    auto it = node_key2total_count.find(key);
+    if (it != node_key2total_count.end()) {
+        file.seekp(0, file.end);
+        uint64_t offset = file.tellp(); // TODO: sum something to point directly?
+        if (diff <= 0) {
+            assert(false);
+            return;
+        }
+        CountOffset data{static_cast<uint64_t>(diff), offset};
+        node_key2total_count.insert({key, data});
+
+        // TODO: also add new key to keys_str and keys2id if not present
+    } else {
+        it->second.count += diff;
+        file.seekp(it->second.offset);
+        file.write(reinterpret_cast<const char*>(&it->second.count), sizeof(it->second.count));
+    }
+}
+
+void QuadCatalog::update_edge_key_count(ObjectId key, int diff)
+{
+    std::unique_lock lock(mutex);
+    // TODO:
+}
+
+void QuadCatalog::update_node_label_count(ObjectId label, int diff)
+{
+    std::unique_lock lock(mutex);
+    // TODO:
+}
+
+void QuadCatalog::update_edge_label_count(ObjectId label, int diff)
+{
+    std::unique_lock lock(mutex);
+    // TODO:
+}
+
+void QuadCatalog::update_equal_from_to_label_count(ObjectId label, int diff)
+{
+    std::unique_lock lock(mutex);
+    // TODO:
+}
+
+void QuadCatalog::update_deleted_edges(int diff)
+{
+    std::unique_lock lock(mutex);
+    // TODO:
+}
+
+void QuadCatalog::update_nodes_count(int diff)
+{
+    std::unique_lock lock(mutex);
+    // TODO:
+}
+
+void QuadCatalog::update_nodes_labels_count(int diff)
+{
+    std::unique_lock lock(mutex);
+    // TODO:
+}
+
+void QuadCatalog::update_nodes_properties_count(int diff)
+{
+    std::unique_lock lock(mutex);
+    // TODO:
+}
+
+void QuadCatalog::update_edge_properties_count(int diff)
+{
+    std::unique_lock lock(mutex);
+    // TODO:
+}
+
+void QuadCatalog::update_equal_from_to_count(int diff)
+{
+    std::unique_lock lock(mutex);
+    // TODO:
+}
+
+void QuadCatalog::flush_changes()
+{
+    file.flush();
 }

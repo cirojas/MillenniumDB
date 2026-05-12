@@ -23,7 +23,7 @@ public:
             return;
         }
 
-        auto obj_id = transform_if_tmp(obj_).id;
+        auto obj_id = transform_if_tmp(obj_);
         if (ObjectId(obj_id).type() == ObjectType::DirectedEdge) {
             auto edge_key = ctx.get_key_id(key);
             ctx.delete_edge_property(obj_id, edge_key);

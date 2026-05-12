@@ -30,9 +30,9 @@ public:
         }
 
         ObjectId obj_ = obj.is_var() ? binding[obj.get_var()] : obj.get_OID();
-        auto obj_id = transform_if_tmp(obj_).id;
-        auto value_id = transform_if_tmp(val_).id;
-        if (ObjectId(obj_id).type() == ObjectType::DirectedEdge) {
+        auto obj_id = transform_if_tmp(obj_);
+        auto value_id = transform_if_tmp(val_);
+        if (obj_id.type() == ObjectType::DirectedEdge) {
             auto edge_key = ctx.get_key_id(key);
             ctx.insert_edge_property(obj_id, edge_key, value_id);
         } else {

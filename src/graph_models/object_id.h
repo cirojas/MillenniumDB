@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <ostream>
 
+#include <boost/container_hash/hash.hpp>
+
 // clang-format off
 enum class ObjectType : uint8_t {
     Null              = 0x00, // 0b000000'00
@@ -516,6 +518,14 @@ public:
     inline bool constexpr operator>=(const ObjectId& rhs) const noexcept
     {
         return id >= rhs.id;
+    }
+};
+
+struct OIDHasher {
+    std::size_t operator()(const ObjectId& o) const
+    {
+        boost::hash<uint64_t> hasher;
+        return hasher(o.id);
     }
 };
 

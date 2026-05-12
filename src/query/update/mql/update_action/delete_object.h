@@ -22,7 +22,7 @@ public:
         if (obj_.is_null()) {
             return;
         }
-        auto obj_id = transform_if_tmp(obj_).id;
+        auto obj_id = transform_if_tmp(obj_);
 
         if (ObjectId(obj_id).type() == ObjectType::DirectedEdge) {
             ctx.delete_edge(obj_id);

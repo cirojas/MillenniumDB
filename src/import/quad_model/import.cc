@@ -238,7 +238,7 @@ void OnDiskImport::start_import(MDBIstream& in)
         catalog.node_labels_count = label_stat.all;
         label_stat.end();
 
-        catalog.node_label2total_count = std::move(label_stat.dict);
+        // catalog.node_label2total_count = std::move(label_stat.dict);
     }
 
     { // Node Properties B+Tree
@@ -250,10 +250,10 @@ void OnDiskImport::start_import(MDBIstream& in)
         node_properties.create_bpt(db_folder + "/node_key_value", { C_NODE, C_KEY, C_VALUE }, no_stat);
 
         node_properties.create_bpt(db_folder + "/key_value_node", { C_KEY, C_VALUE, C_NODE }, prop_stat);
-        catalog.node_properties_count = prop_stat.all;
+        // catalog.node_properties_count = prop_stat.all;
         prop_stat.end();
 
-        catalog.node_key2total_count = std::move(prop_stat.map_key_count);
+        // catalog.node_key2total_count = std::move(prop_stat.map_key_count);
     }
 
     { // Edge Properties B+Tree
@@ -265,10 +265,10 @@ void OnDiskImport::start_import(MDBIstream& in)
         node_properties.create_bpt(db_folder + "/edge_key_value", { C_EDGE, C_KEY, C_VALUE }, no_stat);
 
         node_properties.create_bpt(db_folder + "/key_value_edge", { C_KEY, C_VALUE, C_EDGE }, prop_stat);
-        catalog.edge_properties_count = prop_stat.all;
+        // catalog.edge_properties_count = prop_stat.all;
         prop_stat.end();
 
-        catalog.edge_key2total_count = std::move(prop_stat.map_key_count);
+        // catalog.edge_key2total_count = std::move(prop_stat.map_key_count);
     }
 
     { // Quad B+Trees
@@ -288,8 +288,8 @@ void OnDiskImport::start_import(MDBIstream& in)
 
         edges.create_bpt(db_folder + "/edge_from_to_label", { C_EDGE, C_FROM, C_TO, C_LABEL }, no_stat);
 
-        catalog.max_edge = all_stat.all;
-        catalog.edge_label2total_count = std::move(dict_count.dict);
+        // catalog.max_edge = all_stat.all;
+        // catalog.edge_label2total_count = std::move(dict_count.dict);
     }
 
     { // FROM=TO LABEL EDGE
@@ -302,8 +302,9 @@ void OnDiskImport::start_import(MDBIstream& in)
         equal_from_to.create_bpt(db_folder + "/equal_from_to_inverted", { C_LABEL, C_FROM_TO, C_EDGE }, stat);
         stat.end();
 
-        catalog.equal_from_to_count = stat.all;
-        catalog.edge_label2equal_from_to_count = std::move(stat.dict);
+        // catalog.equal_from_to_count = stat.all;
+        // catalog.edge_label2equal_from_to_count = std::move(stat.dict);
+        // TODO:
     }
 
     // calling finish_indexing() closes and removes the file.

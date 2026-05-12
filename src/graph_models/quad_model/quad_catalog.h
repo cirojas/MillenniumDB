@@ -5,8 +5,8 @@
 #include "storage/index/text_search/text_index_manager.h"
 
 #include <ostream>
-#include <string>
 #include <shared_mutex>
+#include <string>
 
 namespace Import { namespace QuadModel {
 class OnDiskImport;
@@ -19,43 +19,18 @@ class QuadCatalog : public Catalog {
     friend class Import::QuadModel::OnDiskImport;
     friend class Import::QuadModel::CSV::OnDiskImport;
 
+    struct CountOffset {
+        uint64_t count;
+        uint64_t offset;
+    };
+
+    struct StringOffset {
+        std::string str;
+        uint64_t offset;
+    };
+
 private:
     mutable std::shared_mutex mutex;
-
-    // existing edges is max_edge minus deleted_edges
-    uint64_t deleted_edges;
-
-    uint64_t nodes_count;
-    uint64_t node_labels_count;
-    uint64_t node_properties_count;
-    uint64_t edge_properties_count;
-
-    uint64_t equal_from_to_count;
-
-    std::vector<std::string> node_labels_str;
-    boost::unordered_flat_map<std::string, uint64_t> node_labels2id;
-
-    std::vector<std::string> edge_labels_str;
-    boost::unordered_flat_map<std::string, uint64_t> edge_labels2id;
-
-    std::vector<std::string> keys_str;
-    boost::unordered_flat_map<std::string, uint64_t> keys2id;
-
-    boost::unordered_flat_map<uint64_t, uint64_t> node_label2total_count;
-
-    boost::unordered_flat_map<uint64_t, uint64_t> node_key2total_count;
-    boost::unordered_flat_map<uint64_t, uint64_t> edge_key2total_count;
-
-    boost::unordered_flat_map<uint64_t, uint64_t> edge_label2total_count;
-    boost::unordered_flat_map<uint64_t, uint64_t> edge_label2equal_from_to_count;
-
-public:
-    static constexpr uint8_t MODEL_ID = 0;
-    static constexpr uint8_t MAJOR_VERSION = 5;
-    static constexpr uint8_t MINOR_VERSION = 0;
-
-    TextSearch::TextIndexManager text_index_manager;
-    HNSW::HNSWIndexManager hnsw_index_manager;
 
     // there may be gaps in anons, this number is the upper bound
     // meaning each anon is strictly less this this number
@@ -64,6 +39,46 @@ public:
     // there may be gaps in edges, this number is the upper bound
     // meaning each edge is strictly less this this number
     uint64_t max_edge;
+
+    // existing edges is max_edge minus deleted_edges
+    uint64_t deleted_edges;
+
+    uint64_t nodes_count;
+
+    // total of pairs <node,label> in the graph
+    uint64_t node_labels_count;
+
+    // total of tuples <node,key,val> in the graph
+    uint64_t node_properties_count;
+
+    // total of tuples <edge,key,val> in the graph
+    uint64_t edge_properties_count;
+
+    // total of tuples <n,n,label,edge> in the graph
+    uint64_t equal_from_to_count;
+
+    std::vector<StringOffset> node_labels_str; // TODO: change to pair str, file_offset
+    boost::unordered_flat_map<std::string, uint64_t> node_labels2id;
+
+    std::vector<std::string> edge_labels_str;
+    boost::unordered_flat_map<std::string, uint64_t> edge_labels2id;
+
+    std::vector<std::string> keys_str;
+    boost::unordered_flat_map<std::string, uint64_t> keys2id;
+
+    boost::unordered_flat_map<ObjectId, CountOffset, OIDHasher> node_label2total_count;
+    boost::unordered_flat_map<ObjectId, CountOffset, OIDHasher> node_key2total_count;
+    boost::unordered_flat_map<ObjectId, CountOffset, OIDHasher> edge_key2total_count;
+    boost::unordered_flat_map<ObjectId, CountOffset, OIDHasher> edge_label2total_count;
+    boost::unordered_flat_map<ObjectId, CountOffset, OIDHasher> edge_label2equal_from_to_count;
+
+public:
+    static constexpr uint8_t MODEL_ID = 0;
+    static constexpr uint8_t MAJOR_VERSION = 5;
+    static constexpr uint8_t MINOR_VERSION = 0;
+
+    TextSearch::TextIndexManager text_index_manager;
+    HNSW::HNSWIndexManager hnsw_index_manager;
 
     QuadCatalog(const std::string& filename);
 
@@ -90,13 +105,23 @@ public:
         return nodes_count;
     }
 
+    uint64_t get_max_anon() const
+    {
+        return max_anon;
+    }
+
+    uint64_t get_max_edge() const
+    {
+        return max_edge;
+    }
+
     std::string get_key(uint64_t id);
     std::string get_node_label(uint64_t id);
     std::string get_edge_label(uint64_t id);
 
-    uint64_t get_key_id(const std::string& str);
-    uint64_t get_node_label_id(const std::string& str);
-    uint64_t get_edge_label_id(const std::string& str);
+    ObjectId get_key_id(const std::string& str);
+    ObjectId get_node_label_id(const std::string& str);
+    ObjectId get_edge_label_id(const std::string& str);
 
     uint64_t get_edge_label_count(ObjectId label) const;
     uint64_t get_node_label_count(ObjectId label) const;
@@ -109,14 +134,14 @@ public:
     uint64_t get_node_properties_count() const;
     uint64_t get_equal_from_to_edge_count() const;
 
-    void update_node_key_count(uint64_t key, int diff);
-    void update_edge_key_count(uint64_t key, int diff);
-    void update_node_label_count(uint64_t label, int diff);
-    void update_edge_label_count(uint64_t label, int diff);
-    void update_equal_from_to_label_count(uint64_t label, int diff);
+    void update_node_key_count(ObjectId key, int diff);
+    void update_edge_key_count(ObjectId key, int diff);
+    void update_node_label_count(ObjectId label, int diff);
+    void update_edge_label_count(ObjectId label, int diff);
+    void update_equal_from_to_label_count(ObjectId label, int diff);
 
-    void update_max_anon(int new_value);
-    void update_max_edge(int new_value);
+    void update_max_anon(uint64_t new_value);
+    void update_max_edge(uint64_t new_value);
     void update_deleted_edges(int diff);
 
     void update_nodes_count(int diff);
@@ -124,6 +149,8 @@ public:
     void update_nodes_properties_count(int diff);
     void update_edge_properties_count(int diff);
     void update_equal_from_to_count(int diff);
+
+    void flush_changes();
 
     // TODO: use something like this to create catalog at import
     static void create_new_catalog();

@@ -26,7 +26,7 @@ public:
             throw QueryExecutionException("cannot insert label to an edge");
         }
 
-        auto node_id = transform_if_tmp(node_).id;
+        auto node_id = transform_if_tmp(node_);
         auto label_id = ctx.get_node_label_id(label);
 
         ctx.insert_node_label(node_id, label_id);

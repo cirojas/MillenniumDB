@@ -230,8 +230,9 @@ void OnDiskImport::start_import(
         }
         // declared_nodes.finish_appends() its called twice, no problem with that
         nodes.finish_appends();
-        catalog.nodes_count = nodes_set.size();
-        catalog.max_anon = current_anon_id;
+        // catalog.nodes_count = nodes_set.size();
+        // catalog.max_anon = current_anon_id;
+        // TODO:
     }
     print_duration("Write table", start);
 
@@ -261,7 +262,7 @@ void OnDiskImport::start_import(
         catalog.node_labels_count = label_stat.all;
         label_stat.end();
 
-        catalog.node_label2total_count = std::move(label_stat.dict);
+        // catalog.node_label2total_count = std::move(label_stat.dict);
     }
 
     { // Node Properties B+Tree
@@ -276,7 +277,7 @@ void OnDiskImport::start_import(
         catalog.node_properties_count = prop_stat.all;
         prop_stat.end();
 
-        catalog.node_key2total_count = std::move(prop_stat.map_key_count);
+        // catalog.node_key2total_count = std::move(prop_stat.map_key_count);
     }
 
     { // Edge Properties B+Tree
@@ -291,7 +292,7 @@ void OnDiskImport::start_import(
         catalog.edge_properties_count = prop_stat.all;
         prop_stat.end();
 
-        catalog.edge_key2total_count = std::move(prop_stat.map_key_count);
+        // catalog.edge_key2total_count = std::move(prop_stat.map_key_count);
     }
 
     { // Quad B+Trees
@@ -311,8 +312,8 @@ void OnDiskImport::start_import(
 
         edges.create_bpt(db_folder + "/edge_from_to_label", { C_EDGE, C_FROM, C_TO, C_LABEL }, no_stat);
 
-        catalog.max_edge = all_stat.all;
-        catalog.edge_label2total_count = std::move(dict_count.dict);
+        // catalog.max_edge = all_stat.all;
+        // catalog.edge_label2total_count = std::move(dict_count.dict);
     }
 
     { // FROM=TO LABEL EDGE
@@ -325,8 +326,8 @@ void OnDiskImport::start_import(
         equal_from_to.create_bpt(db_folder + "/equal_from_to_inverted", { C_LABEL, C_FROM_TO, C_EDGE }, stat);
         stat.end();
 
-        catalog.equal_from_to_count = stat.all;
-        catalog.edge_label2equal_from_to_count = std::move(stat.dict);
+        // catalog.equal_from_to_count = stat.all;
+        // catalog.edge_label2equal_from_to_count = std::move(stat.dict);
     }
 
     // calling finish_indexing() closes and removes the file.
@@ -339,9 +340,9 @@ void OnDiskImport::start_import(
 
     print_duration("Write B+tree indexes", start);
 
-    catalog.node_labels2id = std::move(node_labels2id);
-    catalog.edge_labels2id = std::move(edge_labels2id);
-    catalog.keys2id = std::move(keys2id);
+    // catalog.node_labels2id = std::move(node_labels2id);
+    // catalog.edge_labels2id = std::move(edge_labels2id);
+    // catalog.keys2id = std::move(keys2id);
 
     catalog.print(std::cout);
 

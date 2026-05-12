@@ -25,7 +25,7 @@ public:
             return;
         }
 
-        auto node_id = transform_if_tmp(node_).id;
+        auto node_id = transform_if_tmp(node_);
         ctx.insert_node(node_id);
     }
 

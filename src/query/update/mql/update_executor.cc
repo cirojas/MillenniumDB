@@ -22,7 +22,6 @@ uint64_t UpdateExecutor::execute()
     int64_t diff_edge_properties = 0;
     int64_t diff_equal_from_to = 0;
 
-    // TODO: rethink catalog update, avoid unsafe operations in maps, remember we can have multiple reads at the time?
     for (auto&& [label, diff] : ctx.node_label2total_diff) {
         if (diff != 0) {
             diff_node_labels += diff;
@@ -68,6 +67,8 @@ uint64_t UpdateExecutor::execute()
     catalog.update_nodes_properties_count(diff_node_properties);
     catalog.update_edge_properties_count(diff_edge_properties);
     catalog.update_equal_from_to_count(diff_equal_from_to);
+
+    catalog.flush_changes();
 
     return 0;
 }

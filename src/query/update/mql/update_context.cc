@@ -7,25 +7,25 @@ using namespace MQL;
 
 UpdateContext::UpdateContext()
 {
-    current_anon = quad_model.catalog.max_anon;
-    current_edge = quad_model.catalog.max_edge;
+    current_anon = quad_model.catalog.get_max_anon();
+    current_edge = quad_model.catalog.get_max_edge();
 
     for (auto&& [predicate, names] : quad_model.catalog.text_index_manager.get_predicate2names()) {
-        auto predicate_id = Conversions::pack_string(predicate).id; // TODO:
+        auto key_id = Conversions::get_key_id(predicate);
         for (auto& name : names) {
-            indexed_keys[predicate_id].push_back(name);
+            indexed_keys[key_id].push_back(name);
         }
     }
 
     for (auto&& [predicate, names] : quad_model.catalog.hnsw_index_manager.get_predicate2names()) {
-        auto predicate_id = Conversions::pack_string(predicate).id; // TODO:
+        auto key_id = Conversions::get_key_id(predicate);
         for (auto& name : names) {
-            indexed_keys[predicate_id].push_back(name);
+            indexed_keys[key_id].push_back(name);
         }
     }
 }
 
-void UpdateContext::process_new_property(uint64_t obj, uint64_t key, uint64_t val)
+void UpdateContext::process_new_property(ObjectId obj, ObjectId key, ObjectId val)
 {
     auto keys = indexed_keys.find(key);
     if (keys == indexed_keys.end()) {
@@ -34,14 +34,14 @@ void UpdateContext::process_new_property(uint64_t obj, uint64_t key, uint64_t va
 
     for (auto& index_name : keys->second) {
         if (auto text_index = quad_model.catalog.text_index_manager.get_text_index(index_name)) {
-            auto inserted_tokens = text_index->index_single(ObjectId(obj), ObjectId(val));
+            auto inserted_tokens = text_index->index_single(obj, val);
             if (inserted_tokens > 0) {
                 text_index_inserts += inserted_tokens;
             }
         }
 
         if (auto hnsw_index = quad_model.catalog.hnsw_index_manager.get_hnsw_index(index_name)) {
-            auto inserted_elements = hnsw_index->index_single<true>(ObjectId(obj), ObjectId(val));
+            auto inserted_elements = hnsw_index->index_single<true>(obj, val);
             if (inserted_elements > 0) {
                 hnsw_index_inserts += inserted_elements;
             }
@@ -49,8 +49,8 @@ void UpdateContext::process_new_property(uint64_t obj, uint64_t key, uint64_t va
     }
 }
 
-// TODO: diferenciar nodos y edges?
-void UpdateContext::process_deleted_property(uint64_t obj, uint64_t key, uint64_t val)
+// check if index needs to be modified
+void UpdateContext::process_deleted_property(ObjectId obj, ObjectId key, ObjectId val)
 {
     auto keys = indexed_keys.find(key);
     if (keys == indexed_keys.end()) {
@@ -59,14 +59,14 @@ void UpdateContext::process_deleted_property(uint64_t obj, uint64_t key, uint64_
 
     for (auto& index_name : keys->second) {
         if (auto text_index = quad_model.catalog.text_index_manager.get_text_index(index_name)) {
-            auto deleted_tokens = text_index->remove_single(ObjectId(obj), ObjectId(val));
+            auto deleted_tokens = text_index->remove_single(obj, val);
             if (deleted_tokens > 0) {
                 text_index_deletes += deleted_tokens;
             }
         }
 
         if (auto hnsw_index = quad_model.catalog.hnsw_index_manager.get_hnsw_index(index_name)) {
-            auto deleted_elements = hnsw_index->remove_single(ObjectId(obj), ObjectId(val));
+            auto deleted_elements = hnsw_index->remove_single(obj, val);
             if (deleted_elements > 0) {
                 hnsw_index_deletes += deleted_elements;
             }
@@ -98,4 +98,34 @@ void UpdateContext::create_hnsw_index(CreateHNSWIndex& index_info)
         index_info.metric_type
     );
     text_index_inserts += inserted_elements;
+}
+
+ObjectId UpdateContext::get_edge_label_id(const std::string& str)
+{
+    auto res = quad_model.catalog.get_edge_label_id(str);
+    if (res.is_not_found()) {
+        // TODO:
+        // res = ;
+    }
+    return res;
+}
+
+ObjectId UpdateContext::get_node_label_id(const std::string& str)
+{
+    auto res = quad_model.catalog.get_node_label_id(str);
+    if (res.is_not_found()) {
+        // TODO:
+        // res = ;
+    }
+    return res;
+}
+
+ObjectId UpdateContext::get_key_id(const std::string& str)
+{
+    auto res = quad_model.catalog.get_key_id(str);
+    if (res.is_not_found()) {
+        // TODO:
+        // res = ;
+    }
+    return res;
 }

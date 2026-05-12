@@ -26,8 +26,8 @@ public:
         //     throw QueryExecutionException("cannot set label null label");
         // }
 
-        auto obj_id = transform_if_tmp(obj_).id;
-        if (obj_.type() == ObjectType::DirectedEdge) {
+        auto obj_id = transform_if_tmp(obj_);
+        if (obj_id.type() == ObjectType::DirectedEdge) {
             auto edge_label = ctx.get_edge_label_id(label);
             ctx.set_edge_label(obj_id, edge_label);
         } else {

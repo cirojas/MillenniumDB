@@ -4,29 +4,17 @@
 
 ObjectId MQL::Conversions::get_key_id(const std::string& str)
 {
-    auto id = quad_model.catalog.get_key_id(str);
-    if (id != ObjectId::MASK_NOT_FOUND) {
-        id |= ObjectId::MASK_PROPERTY_KEY;
-    }
-    return ObjectId(id);
+    return quad_model.catalog.get_key_id(str);
 }
 
 ObjectId MQL::Conversions::get_node_label_id(const std::string& str)
 {
-    auto id = quad_model.catalog.get_node_label_id(str);
-    if (id != ObjectId::MASK_NOT_FOUND) {
-        id |= ObjectId::MASK_NODE_LABEL;
-    }
-    return ObjectId(id);
+    return quad_model.catalog.get_node_label_id(str);
 }
 
 ObjectId MQL::Conversions::get_edge_label_id(const std::string& str)
 {
-    auto id = quad_model.catalog.get_edge_label_id(str);
-    if (id != ObjectId::MASK_NOT_FOUND) {
-        id |= ObjectId::MASK_EDGE_LABEL;
-    }
-    return ObjectId(id);
+    return quad_model.catalog.get_edge_label_id(str);
 }
 
 std::string MQL::Conversions::get_key(ObjectId oid)

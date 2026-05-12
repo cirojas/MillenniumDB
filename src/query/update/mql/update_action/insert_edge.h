@@ -27,11 +27,11 @@ public:
             throw QueryExecutionException("cannot create an edge using a null node");
         }
 
-        auto edge_id = ctx.get_new_edge_id().id;
-        binding.add(edge, ObjectId(edge_id));
+        auto edge_id = ctx.get_new_edge_id();
+        binding.add(edge, edge_id);
 
-        auto from_id = transform_if_tmp(from_).id;
-        auto to_id = transform_if_tmp(to_).id;
+        auto from_id = transform_if_tmp(from_);
+        auto to_id = transform_if_tmp(to_);
         auto label_id = ctx.get_edge_label_id(label);
 
         ctx.insert_edge(from_id, to_id, label_id, edge_id);
