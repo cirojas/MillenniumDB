@@ -104,8 +104,15 @@ ObjectId UpdateContext::get_edge_label_id(const std::string& str)
 {
     auto res = quad_model.catalog.get_edge_label_id(str);
     if (res.is_not_found()) {
-        // TODO:
-        // res = ;
+        auto it = new_catalog_edge_labels.find(str);
+        if (it != new_catalog_edge_labels.end()) {
+            return it->second;
+        } else {
+            auto new_internal_id = quad_model.catalog.get_distinct_edge_labels()
+                                 + new_catalog_edge_labels.size();
+            res = ObjectId(new_internal_id | ObjectId::MASK_EDGE_LABEL);
+            new_catalog_edge_labels.insert({ str, res });
+        }
     }
     return res;
 }
@@ -114,8 +121,15 @@ ObjectId UpdateContext::get_node_label_id(const std::string& str)
 {
     auto res = quad_model.catalog.get_node_label_id(str);
     if (res.is_not_found()) {
-        // TODO:
-        // res = ;
+        auto it = new_catalog_node_labels.find(str);
+        if (it != new_catalog_node_labels.end()) {
+            return it->second;
+        } else {
+            auto new_internal_id = quad_model.catalog.get_distinct_node_labels()
+                                 + new_catalog_node_labels.size();
+            res = ObjectId(new_internal_id | ObjectId::MASK_NODE_LABEL);
+            new_catalog_node_labels.insert({ str, res });
+        }
     }
     return res;
 }
@@ -124,8 +138,14 @@ ObjectId UpdateContext::get_key_id(const std::string& str)
 {
     auto res = quad_model.catalog.get_key_id(str);
     if (res.is_not_found()) {
-        // TODO:
-        // res = ;
+        auto it = new_catalog_keys.find(str);
+        if (it != new_catalog_keys.end()) {
+            return it->second;
+        } else {
+            auto new_internal_id = quad_model.catalog.get_distinct_keys_count() + new_catalog_keys.size();
+            res = ObjectId(new_internal_id | ObjectId::MASK_PROPERTY_KEY);
+            new_catalog_keys.insert({ str, res });
+        }
     }
     return res;
 }

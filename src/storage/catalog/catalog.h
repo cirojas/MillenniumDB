@@ -19,6 +19,8 @@ Catalog layout in MillenniumDB 1.X.Y:
 */
 class Catalog {
 public:
+    static constexpr size_t VERSION_HEADER_SIZE = 12;
+
     enum class ModelID {
         RDF, QUAD, GQL
     };

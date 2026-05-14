@@ -5,6 +5,7 @@
 #include "query/exceptions.h"
 
 #include <boost/unordered/unordered_flat_map.hpp>
+#include <map>
 
 namespace MQL {
 
@@ -33,11 +34,10 @@ public:
     int64_t text_index_inserts = 0;
     int64_t text_index_deletes = 0;
 
-    // TODO: add here new? delay writing in catalog till end?
-    // TODO: maybe use map?
-    std::vector<std::pair<std::string, uint64_t>> new_catalog_keys;
-    std::vector<std::pair<std::string, uint64_t>> new_catalog_node_labels;
-    std::vector<std::pair<std::string, uint64_t>> new_catalog_edge_labels;
+    // add here new id, delay writing in catalog until committing
+    std::map<std::string, ObjectId> new_catalog_keys;
+    std::map<std::string, ObjectId> new_catalog_node_labels;
+    std::map<std::string, ObjectId> new_catalog_edge_labels;
 
     // IMPORTANT: stats may be negative, use int64_t
     boost::unordered_flat_map<ObjectId, int64_t, OIDHasher> node_label2total_diff;

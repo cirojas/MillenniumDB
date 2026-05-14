@@ -4,6 +4,7 @@
 #include "storage/index/hnsw/hnsw_index_manager.h"
 #include "storage/index/text_search/text_index_manager.h"
 
+#include <map>
 #include <ostream>
 #include <shared_mutex>
 #include <string>
@@ -24,13 +25,23 @@ class QuadCatalog : public Catalog {
         uint64_t offset;
     };
 
-    struct StringOffset {
-        std::string str;
-        uint64_t offset;
-    };
+    // struct StringOffset {
+    //     std::string str;
+    //     uint64_t offset;
+    // };
 
 private:
     mutable std::shared_mutex mutex;
+
+    static constexpr size_t MAX_ANON_OFFSET = VERSION_HEADER_SIZE;
+    static constexpr size_t MAX_EDGE_OFFSET = MAX_ANON_OFFSET + sizeof(uint64_t);
+    static constexpr size_t DELETED_EDGES_OFFSET = MAX_EDGE_OFFSET + sizeof(uint64_t);
+    static constexpr size_t NODES_COUNT_OFFSET = DELETED_EDGES_OFFSET + sizeof(uint64_t);
+    static constexpr size_t NODE_LABELS_COUNT_OFFSET = NODES_COUNT_OFFSET + sizeof(uint64_t);
+    static constexpr size_t NODE_PROPERTIES_COUNT_OFFSET = NODE_LABELS_COUNT_OFFSET + sizeof(uint64_t);
+    static constexpr size_t EDGE_PROPERTIES_COUNT_OFFSET = NODE_PROPERTIES_COUNT_OFFSET + sizeof(uint64_t);
+    static constexpr size_t EQUAL_FROM_TO_COUNT_OFFSET = EDGE_PROPERTIES_COUNT_OFFSET + sizeof(uint64_t);
+
 
     // there may be gaps in anons, this number is the upper bound
     // meaning each anon is strictly less this this number
@@ -57,7 +68,7 @@ private:
     // total of tuples <n,n,label,edge> in the graph
     uint64_t equal_from_to_count;
 
-    std::vector<StringOffset> node_labels_str; // TODO: change to pair str, file_offset
+    std::vector<std::string> node_labels_str;
     boost::unordered_flat_map<std::string, uint64_t> node_labels2id;
 
     std::vector<std::string> edge_labels_str;
@@ -82,27 +93,38 @@ public:
 
     QuadCatalog(const std::string& filename);
 
-    // ~QuadCatalog();
-
     void print(std::ostream&) const;
-    // void save();
 
     bool index_name_exists(const std::string& index_name);
 
     // return how many edges are in the database
-    // TODO: is this completely accurate or an estimate that can be wrong if concurrent update
-    // is occurring?
     uint64_t get_edges_count() const
     {
         return max_edge - deleted_edges;
     }
 
     // return how many nodes are in the database
-    // TODO: is this completely accurate or an estimate that can be wrong if concurrent update
-    // is occurring?
     uint64_t get_nodes_count() const
     {
         return nodes_count;
+    }
+
+    uint64_t get_distinct_keys_count() const
+    {
+        // std::shared_lock lock(mutex);
+        return keys_str.size();
+    }
+
+    uint64_t get_distinct_edge_labels() const
+    {
+        // std::shared_lock lock(mutex);
+        return edge_labels_str.size();
+    }
+
+    uint64_t get_distinct_node_labels() const
+    {
+        // std::shared_lock lock(mutex);
+        return node_labels_str.size();
     }
 
     uint64_t get_max_anon() const
@@ -133,6 +155,10 @@ public:
     uint64_t get_edge_properties_count() const;
     uint64_t get_node_properties_count() const;
     uint64_t get_equal_from_to_edge_count() const;
+
+    void create_new_edge_labels(const std::map<std::string, ObjectId>&);
+    void create_new_node_labels(const std::map<std::string, ObjectId>&);
+    void create_new_keys(const std::map<std::string, ObjectId>&);
 
     void update_node_key_count(ObjectId key, int diff);
     void update_edge_key_count(ObjectId key, int diff);

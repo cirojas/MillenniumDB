@@ -14,8 +14,22 @@ uint64_t UpdateExecutor::execute()
         }
     }
 
+    // At this point we assume we won't get exceptions
+
     auto& catalog = quad_model.catalog;
     auto& ctx = *update_context;
+
+    if (ctx.new_catalog_edge_labels.size() > 0) {
+        catalog.create_new_edge_labels(ctx.new_catalog_edge_labels);
+    }
+
+    if (ctx.new_catalog_node_labels.size() > 0) {
+        catalog.create_new_edge_labels(ctx.new_catalog_node_labels);
+    }
+
+    if (ctx.new_catalog_keys.size() > 0) {
+        catalog.create_new_keys(ctx.new_catalog_keys);
+    }
 
     int64_t diff_node_labels = 0;
     int64_t diff_node_properties = 0;
@@ -56,7 +70,7 @@ uint64_t UpdateExecutor::execute()
     catalog.update_max_anon(ctx.current_anon);
     catalog.update_max_edge(ctx.current_edge);
 
-    catalog.update_deleted_edges(update_context->deleted_edges);
+    catalog.update_deleted_edges(ctx.deleted_edges);
 
     assert(diff_node_labels == ctx.new_node_labels - ctx.deleted_node_labels);
     assert(diff_node_properties == ctx.new_node_properties - ctx.deleted_node_properties);
