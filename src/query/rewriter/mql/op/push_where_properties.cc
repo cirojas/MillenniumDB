@@ -25,6 +25,11 @@ void PushWhereProperties::visit(OpOrderBy& op_order_by)
     op_order_by.op->accept_visitor(*this);
 }
 
+void PushWhereProperties::visit(OpLet&)
+{
+    // TODO: read and infer type if possible
+}
+
 void PushWhereProperties::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 {
     auto bgp_vars = op_basic_graph_pattern.get_all_vars();

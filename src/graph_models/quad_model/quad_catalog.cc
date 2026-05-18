@@ -31,131 +31,143 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
 {
     if (is_empty()) {
         // TODO: allow empty catalog?
-    } else {
-        auto diff_minor_version = check_version("Quad", MODEL_ID, MAJOR_VERSION, MINOR_VERSION);
+        max_anon = 0;
+        max_edge = 0;
+        deleted_edges = 0;
+        nodes_count = 0;
+        node_labels_count = 0;
+        node_properties_count = 0;
+        edge_properties_count = 0;
+        equal_from_to_count = 0;
+        return;
+    }
+    // not empty
+    auto diff_minor_version = check_version("Quad", MODEL_ID, MAJOR_VERSION, MINOR_VERSION);
 
-        if (diff_minor_version != 0) {
-            throw LogicException("Undefined catalog recovery");
+    if (diff_minor_version != 0) {
+        throw LogicException("Undefined catalog recovery");
+    }
+
+    max_anon = read_uint64();
+    max_edge = read_uint64();
+    deleted_edges = read_uint64();
+
+    nodes_count = read_uint64();
+    node_labels_count = read_uint64();
+    node_properties_count = read_uint64();
+    edge_properties_count = read_uint64();
+    equal_from_to_count = read_uint64();
+
+    char byte;
+    while (file.get(byte)) {
+        switch (CatalogInfo(byte)) {
+        case CatalogInfo::node_label: {
+            auto label_id = read_uint64();
+            auto label_str = read_string();
+            if (label_id >= node_labels_str.size()) {
+                node_labels_str.resize(label_id + 1);
+            }
+            node_labels_str[label_id] = label_str;
+            node_labels2id.insert({ label_str, label_id });
+            break;
         }
-
-        max_anon = read_uint64();
-        max_edge = read_uint64();
-        deleted_edges = read_uint64();
-
-        nodes_count = read_uint64();
-        node_labels_count = read_uint64();
-        node_properties_count = read_uint64();
-        edge_properties_count = read_uint64();
-        equal_from_to_count = read_uint64();
-
-        // TODO: reserve space in vectors? or check later to resize?
-
-        char byte;
-        while (file.get(byte)) {
-            switch (CatalogInfo(byte)) {
-            case CatalogInfo::node_label: {
-                auto label_id = read_uint64();
-                auto label_str = read_string();
-                // TODO: assert there is space?
-                node_labels_str[label_id] = label_str;
-                node_labels2id.insert({ label_str, label_id });
-                break;
+        case CatalogInfo::edge_label: {
+            auto label_id = read_uint64();
+            auto label_str = read_string();
+            if (label_id >= edge_labels_str.size()) {
+                edge_labels_str.resize(label_id + 1);
             }
-            case CatalogInfo::edge_label: {
-                auto label_id = read_uint64();
-                auto label_str = read_string();
-                // TODO: assert there is space?
-                edge_labels_str[label_id] = label_str;
-                edge_labels2id.insert({ label_str, label_id });
-                break;
+            edge_labels_str[label_id] = label_str;
+            edge_labels2id.insert({ label_str, label_id });
+            break;
+        }
+        case CatalogInfo::key: {
+            auto key_id = read_uint64();
+            auto key_str = read_string();
+            if (key_id >= keys_str.size()) {
+                keys_str.resize(key_id + 1);
             }
-            case CatalogInfo::key: {
-                auto key_id = read_uint64();
-                auto key_str = read_string();
-                // TODO: assert there is space?
-                keys_str[key_id] = key_str;
-                keys2id.insert({ key_str, key_id });
-                break;
-            }
-            case CatalogInfo::node_label_stat: {
-                auto label_id = read_uint64();
-                uint64_t offset = file.tellp();
-                auto count = read_uint64();
-                CountOffset data { count, offset };
-                node_label2total_count.insert({ ObjectId(label_id), data });
-                break;
-            }
-            case CatalogInfo::edge_label_stat: {
-                auto label_id = read_uint64();
-                uint64_t offset = file.tellp();
-                auto count = read_uint64();
-                CountOffset data { count, offset };
-                edge_label2total_count.insert({ ObjectId(label_id), data });
-                break;
-            }
-            case CatalogInfo::equal_from_to_stat: {
-                auto label_id = read_uint64();
-                uint64_t offset = file.tellp();
-                auto count = read_uint64();
-                CountOffset data { count, offset };
-                edge_label2equal_from_to_count.insert({ ObjectId(label_id), data });
-                break;
-            }
-            case CatalogInfo::node_key_stat: {
-                auto key_id = read_uint64();
-                uint64_t offset = file.tellp();
-                auto count = read_uint64();
-                CountOffset data { count, offset };
-                node_key2total_count.insert({ ObjectId(key_id), data });
-                break;
-            }
-            case CatalogInfo::edge_key_stat: {
-                auto key_id = read_uint64();
-                uint64_t offset = file.tellp();
-                auto count = read_uint64();
-                CountOffset data { count, offset };
-                edge_key2total_count.insert({ ObjectId(key_id), data });
-                break;
-            }
-            case CatalogInfo::hnsw_index: {
-                auto idx_name = read_string();
-                HNSW::HNSWIndexManager::HNSWIndexMetadata metadata;
-                metadata.metric_type = static_cast<HNSW::MetricType>(read_uint8());
-                metadata.predicate = read_string();
-                hnsw_index_manager.load_hnsw_index(idx_name, metadata);
-
-                //         hnsw_index_manager.init();
-                //         const auto hnsw_index_name2metadata_size = read_uint64();
-                //         for (uint_fast32_t i = 0; i < hnsw_index_name2metadata_size; ++i) {
-                //             const auto name = read_string();
-                //             HNSW::HNSWIndexManager::HNSWIndexMetadata metadata;
-                //             metadata.metric_type = static_cast<HNSW::MetricType>(read_uint8());
-                //             metadata.predicate = read_string();
-                //             hnsw_index_manager.load_hnsw_index(name, metadata);
-                //         }
-                break;
-            }
-            case CatalogInfo::text_index: {
-                auto idx_name = read_string();
-                TextSearch::TextIndexManager::TextIndexMetadata metadata;
-                metadata.normalization_type = static_cast<TextSearch::NORMALIZE_TYPE>(read_uint8());
-                metadata.tokenization_type = static_cast<TextSearch::TOKENIZE_TYPE>(read_uint8());
-                metadata.predicate_id = ObjectId(read_uint64());
-                metadata.predicate = read_string();
-                text_index_manager.load_text_index(idx_name, metadata);
-                break;
-            }
-                //         const auto text_index_name2metadata_size = read_uint64();
-                //         for (uint_fast32_t i = 0; i < text_index_name2metadata_size; ++i) {
-                //             const auto name = read_string();
-                //             TextSearch::TextIndexManager::TextIndexMetadata metadata;
-                //             metadata.normalization_type = static_cast<TextSearch::NORMALIZE_TYPE>(read_uint8());
-                //             metadata.tokenization_type = static_cast<TextSearch::TOKENIZE_TYPE>(read_uint8());
-                //             metadata.predicate_id = ObjectId(read_uint64());
-                //             metadata.predicate = read_string();
-                //             text_index_manager.load_text_index(name, metadata);
-                //         }
-            }
+            keys_str[key_id] = key_str;
+            keys2id.insert({ key_str, key_id });
+            break;
+        }
+        case CatalogInfo::node_label_stat: {
+            auto label_id = read_uint64();
+            uint64_t offset = file.tellp();
+            auto count = read_uint64();
+            CountOffset data { count, offset };
+            node_label2total_count.insert({ ObjectId(label_id), data });
+            break;
+        }
+        case CatalogInfo::edge_label_stat: {
+            auto label_id = read_uint64();
+            uint64_t offset = file.tellp();
+            auto count = read_uint64();
+            CountOffset data { count, offset };
+            edge_label2total_count.insert({ ObjectId(label_id), data });
+            break;
+        }
+        case CatalogInfo::equal_from_to_stat: {
+            auto label_id = read_uint64();
+            uint64_t offset = file.tellp();
+            auto count = read_uint64();
+            CountOffset data { count, offset };
+            edge_label2equal_from_to_count.insert({ ObjectId(label_id), data });
+            break;
+        }
+        case CatalogInfo::node_key_stat: {
+            auto key_id = read_uint64();
+            uint64_t offset = file.tellp();
+            auto count = read_uint64();
+            CountOffset data { count, offset };
+            node_key2total_count.insert({ ObjectId(key_id), data });
+            break;
+        }
+        case CatalogInfo::edge_key_stat: {
+            auto key_id = read_uint64();
+            uint64_t offset = file.tellp();
+            auto count = read_uint64();
+            CountOffset data { count, offset };
+            edge_key2total_count.insert({ ObjectId(key_id), data });
+            break;
+        }
+        case CatalogInfo::hnsw_index: {
+            auto idx_name = read_string();
+            HNSW::HNSWIndexManager::HNSWIndexMetadata metadata;
+            metadata.metric_type = static_cast<HNSW::MetricType>(read_uint8());
+            metadata.predicate = read_string();
+            hnsw_index_manager.load_hnsw_index(idx_name, metadata);
+            break;
+            // hnsw_index_manager.init();
+            // const auto hnsw_index_name2metadata_size = read_uint64();
+            // for (uint_fast32_t i = 0; i < hnsw_index_name2metadata_size; ++i) {
+            //     const auto name = read_string();
+            //     HNSW::HNSWIndexManager::HNSWIndexMetadata metadata;
+            //     metadata.metric_type = static_cast<HNSW::MetricType>(read_uint8());
+            //     metadata.predicate = read_string();
+            //     hnsw_index_manager.load_hnsw_index(name, metadata);
+            // }
+        }
+        case CatalogInfo::text_index: {
+            auto idx_name = read_string();
+            TextSearch::TextIndexManager::TextIndexMetadata metadata;
+            metadata.normalization_type = static_cast<TextSearch::NORMALIZE_TYPE>(read_uint8());
+            metadata.tokenization_type = static_cast<TextSearch::TOKENIZE_TYPE>(read_uint8());
+            metadata.predicate_id = ObjectId(read_uint64());
+            metadata.predicate = read_string();
+            text_index_manager.load_text_index(idx_name, metadata);
+            break;
+            // const auto text_index_name2metadata_size = read_uint64();
+            // for (uint_fast32_t i = 0; i < text_index_name2metadata_size; ++i) {
+            //     const auto name = read_string();
+            //     TextSearch::TextIndexManager::TextIndexMetadata metadata;
+            //     metadata.normalization_type = static_cast<TextSearch::NORMALIZE_TYPE>(read_uint8());
+            //     metadata.tokenization_type = static_cast<TextSearch::TOKENIZE_TYPE>(read_uint8());
+            //     metadata.predicate_id = ObjectId(read_uint64());
+            //     metadata.predicate = read_string();
+            //     text_index_manager.load_text_index(name, metadata);
+            // }
+        }
         }
     }
 }
@@ -534,7 +546,7 @@ void QuadCatalog::update_max_anon(uint64_t new_value)
         return;
     max_anon = new_value;
     file.seekp(MAX_ANON_OFFSET);
-    file.write(reinterpret_cast<const char*>(&max_anon), sizeof(max_anon));
+    write_uint64(max_anon);
 }
 
 void QuadCatalog::update_max_edge(uint64_t new_value)
@@ -543,115 +555,50 @@ void QuadCatalog::update_max_edge(uint64_t new_value)
         return;
     max_edge = new_value;
     file.seekp(MAX_EDGE_OFFSET);
-    file.write(reinterpret_cast<const char*>(&max_edge), sizeof(max_edge));
+    write_uint64(max_edge);
 }
 
 void QuadCatalog::update_deleted_edges(int diff)
 {
     deleted_edges += diff;
     file.seekp(DELETED_EDGES_OFFSET);
-    file.write(reinterpret_cast<const char*>(&deleted_edges), sizeof(deleted_edges));
+    write_uint64(deleted_edges);
 }
 
 void QuadCatalog::update_nodes_count(int diff)
 {
     nodes_count += diff;
     file.seekp(NODES_COUNT_OFFSET);
-    file.write(reinterpret_cast<const char*>(&nodes_count), sizeof(nodes_count));
+    write_uint64(nodes_count);
 }
 
 void QuadCatalog::update_nodes_labels_count(int diff)
 {
     node_labels_count += diff;
     file.seekp(NODE_LABELS_COUNT_OFFSET);
-    file.write(reinterpret_cast<const char*>(&node_labels_count), sizeof(node_labels_count));
+    write_uint64(node_labels_count);
 }
 
 void QuadCatalog::update_nodes_properties_count(int diff)
 {
     node_properties_count += diff;
     file.seekp(NODE_PROPERTIES_COUNT_OFFSET);
-    file.write(reinterpret_cast<const char*>(&node_properties_count), sizeof(node_properties_count));
+    write_uint64(node_properties_count);
 }
 
 void QuadCatalog::update_edge_properties_count(int diff)
 {
     edge_properties_count += diff;
     file.seekp(EDGE_PROPERTIES_COUNT_OFFSET);
-    file.write(reinterpret_cast<const char*>(&edge_properties_count), sizeof(edge_properties_count));
+    write_uint64(edge_properties_count);
 }
 
 void QuadCatalog::update_equal_from_to_count(int diff)
 {
     equal_from_to_count += diff;
     file.seekp(EQUAL_FROM_TO_COUNT_OFFSET);
-    file.write(reinterpret_cast<const char*>(&equal_from_to_count), sizeof(equal_from_to_count));
+    write_uint64(equal_from_to_count);
 }
-
-void QuadCatalog::create_new_edge_labels(const std::map<std::string, ObjectId>& list)
-{
-    std::unique_lock lock(mutex);
-    file.seekp(0, file.end);
-    CatalogInfo info = CatalogInfo::edge_label;
-
-    edge_labels_str.resize(edge_labels_str.size() + list.size());
-    for (auto&& [label_str, oid] : list) {
-        auto internal_id = oid.get_value();
-        assert(internal_id < edge_labels_str.size());
-        edge_labels_str[internal_id] = label_str;
-        edge_labels2id.insert({ label_str, internal_id });
-
-        uint32_t strlen = label_str.size();
-        file.write(reinterpret_cast<const char*>(&info), 1);
-        file.write(reinterpret_cast<const char*>(&internal_id), 8);
-        file.write(reinterpret_cast<const char*>(&strlen), 4);
-        file.write(reinterpret_cast<const char*>(label_str.data()), strlen);
-    }
-}
-
-void QuadCatalog::create_new_node_labels(const std::map<std::string, ObjectId>& list)
-{
-    std::unique_lock lock(mutex);
-    file.seekp(0, file.end);
-    CatalogInfo info = CatalogInfo::node_label;
-
-    node_labels_str.resize(node_labels_str.size() + list.size());
-    for (auto&& [label_str, oid] : list) {
-        auto internal_id = oid.get_value();
-        assert(internal_id < node_labels_str.size());
-        node_labels_str[internal_id] = label_str;
-        node_labels2id.insert({ label_str, internal_id });
-
-        uint32_t strlen = label_str.size();
-        file.write(reinterpret_cast<const char*>(&info), 1);
-        file.write(reinterpret_cast<const char*>(&internal_id), 8);
-        file.write(reinterpret_cast<const char*>(&strlen), 4);
-        file.write(reinterpret_cast<const char*>(label_str.data()), strlen);
-    }
-}
-// void QuadCatalog::create_new_node_label(const std::string& str, ObjectId oid)
-// {
-//     std::unique_lock lock(mutex);
-
-//     auto internal_id = oid.get_value();
-//     assert(internal_id < node_labels_str.size());
-//     node_labels_str[internal_id] = str;
-//     node_labels2id.insert({str, internal_id});
-
-//     CatalogInfo info = CatalogInfo::node_label;
-//     uint32_t strlen = str.size();
-//     file.seekp(0, file.end);
-//     file.write(reinterpret_cast<const char*>(&info), 1);
-//     file.write(reinterpret_cast<const char*>(&internal_id), 8);
-//     file.write(reinterpret_cast<const char*>(&strlen), 4);
-//     file.write(reinterpret_cast<const char*>(str.data()), strlen);
-// }
-
-// void QuadCatalog::create_new_edge_label(const std::string&, ObjectId)
-// {
-//     std::unique_lock lock(mutex);
-//     // TODO:
-// }
 
 void QuadCatalog::update_node_key_count(ObjectId key, int diff)
 {
@@ -667,14 +614,13 @@ void QuadCatalog::update_node_key_count(ObjectId key, int diff)
         }
         CountOffset data { static_cast<uint64_t>(diff), offset };
         node_key2total_count.insert({ key, data });
-        CatalogInfo info = CatalogInfo::node_key_stat;
-        file.write(reinterpret_cast<const char*>(&info), 1);
-        file.write(reinterpret_cast<const char*>(&key.id), 8);
-        file.write(reinterpret_cast<const char*>(&data.count), 8);
+        write_uint8(uint8_t(CatalogInfo::node_key_stat));
+        write_uint64(key.id);
+        write_uint64(data.count);
     } else {
         it->second.count += diff;
         file.seekp(it->second.offset);
-        file.write(reinterpret_cast<const char*>(&it->second.count), 8);
+        write_uint64(it->second.count);
     }
 }
 
@@ -692,14 +638,13 @@ void QuadCatalog::update_edge_key_count(ObjectId key, int diff)
         }
         CountOffset data { static_cast<uint64_t>(diff), offset };
         edge_key2total_count.insert({ key, data });
-        CatalogInfo info = CatalogInfo::edge_key_stat;
-        file.write(reinterpret_cast<const char*>(&info), 1);
-        file.write(reinterpret_cast<const char*>(&key.id), 8);
-        file.write(reinterpret_cast<const char*>(&data.count), 8);
+        write_uint8(uint8_t(CatalogInfo::edge_key_stat));
+        write_uint64(key.id);
+        write_uint64(data.count);
     } else {
         it->second.count += diff;
         file.seekp(it->second.offset);
-        file.write(reinterpret_cast<const char*>(&it->second.count), 8);
+        write_uint64(it->second.count);
     }
 }
 
@@ -717,14 +662,13 @@ void QuadCatalog::update_node_label_count(ObjectId label, int diff)
         }
         CountOffset data { static_cast<uint64_t>(diff), offset };
         node_label2total_count.insert({ label, data });
-        CatalogInfo info = CatalogInfo::node_label_stat;
-        file.write(reinterpret_cast<const char*>(&info), 1);
-        file.write(reinterpret_cast<const char*>(&label.id), 8);
-        file.write(reinterpret_cast<const char*>(&data.count), 8);
+        write_uint8(uint8_t(CatalogInfo::node_label_stat));
+        write_uint64(label.id);
+        write_uint64(data.count);
     } else {
         it->second.count += diff;
         file.seekp(it->second.offset);
-        file.write(reinterpret_cast<const char*>(&it->second.count), 8);
+        write_uint64(it->second.count);
     }
 }
 
@@ -742,14 +686,13 @@ void QuadCatalog::update_edge_label_count(ObjectId label, int diff)
         }
         CountOffset data { static_cast<uint64_t>(diff), offset };
         edge_label2total_count.insert({ label, data });
-        CatalogInfo info = CatalogInfo::edge_label_stat;
-        file.write(reinterpret_cast<const char*>(&info), 1);
-        file.write(reinterpret_cast<const char*>(&label.id), 8);
-        file.write(reinterpret_cast<const char*>(&data.count), 8);
+        write_uint8(uint8_t(CatalogInfo::edge_label_stat));
+        write_uint64(label.id);
+        write_uint64(data.count);
     } else {
         it->second.count += diff;
         file.seekp(it->second.offset);
-        file.write(reinterpret_cast<const char*>(&it->second.count), 8);
+        write_uint64(it->second.count);
     }
 }
 
@@ -767,18 +710,178 @@ void QuadCatalog::update_equal_from_to_label_count(ObjectId label, int diff)
         }
         CountOffset data { static_cast<uint64_t>(diff), offset };
         edge_label2equal_from_to_count.insert({ label, data });
-        CatalogInfo info = CatalogInfo::equal_from_to_stat;
-        file.write(reinterpret_cast<const char*>(&info), 1);
-        file.write(reinterpret_cast<const char*>(&label.id), 8);
-        file.write(reinterpret_cast<const char*>(&data.count), 8);
+        write_uint8(uint8_t(CatalogInfo::equal_from_to_stat));
+        write_uint64(label.id);
+        write_uint64(data.count);
     } else {
         it->second.count += diff;
         file.seekp(it->second.offset);
-        file.write(reinterpret_cast<const char*>(&it->second.count), 8);
+        write_uint64(it->second.count);
     }
 }
 
 void QuadCatalog::flush_changes()
 {
     file.flush();
+}
+
+void QuadCatalog::create_new_keys(const std::map<std::string, ObjectId>& map)
+{
+    std::unique_lock lock(mutex);
+    file.seekp(0, file.end);
+
+    keys_str.resize(keys_str.size() + map.size());
+    for (auto&& [str, oid] : map) {
+        auto key_id = oid.get_value();
+        write_uint8(uint8_t(CatalogInfo::key));
+        write_uint64(key_id);
+        write_string(str);
+
+        keys_str[key_id] = str;
+        keys2id.insert({ str, key_id });
+    }
+}
+
+void QuadCatalog::create_new_edge_labels(const std::map<std::string, ObjectId>& map)
+{
+    std::unique_lock lock(mutex);
+    file.seekp(0, file.end);
+
+    edge_labels_str.resize(edge_labels_str.size() + map.size());
+    for (auto&& [str, oid] : map) {
+        auto label_id = oid.get_value();
+        write_uint8(uint8_t(CatalogInfo::edge_label));
+        write_uint64(label_id);
+        write_string(str);
+
+        edge_labels_str[label_id] = str;
+        edge_labels2id.insert({ str, label_id });
+    }
+}
+
+void QuadCatalog::create_new_node_labels(const std::map<std::string, ObjectId>& map)
+{
+    std::unique_lock lock(mutex);
+    file.seekp(0, file.end);
+
+    node_labels_str.resize(node_labels_str.size() + map.size());
+    for (auto&& [str, oid] : map) {
+        auto label_id = oid.get_value();
+        write_uint8(uint8_t(CatalogInfo::node_label));
+        write_uint64(label_id);
+        write_string(str);
+
+        node_labels_str[label_id] = str;
+        node_labels2id.insert({ str, label_id });
+    }
+}
+
+void QuadCatalog::process_import_keys_labels(
+    const boost::unordered_flat_map<std::string, uint64_t>& _keys2id,
+    const boost::unordered_flat_map<std::string, uint64_t>& _node_labels2id,
+    const boost::unordered_flat_map<std::string, uint64_t>& _edge_labels2id
+)
+{
+    file.seekp(0, file.end);
+
+    for (auto&& [str, internal_id] : _keys2id) {
+        write_uint8(uint8_t(CatalogInfo::key));
+        write_uint64(internal_id);
+        write_string(str);
+    }
+    for (auto&& [str, internal_id] : _node_labels2id) {
+        write_uint8(uint8_t(CatalogInfo::node_label));
+        write_uint64(internal_id);
+        write_string(str);
+    }
+    for (auto&& [str, internal_id] : _edge_labels2id) {
+        write_uint8(uint8_t(CatalogInfo::edge_label));
+        write_uint64(internal_id);
+        write_string(str);
+    }
+}
+
+void QuadCatalog::process_import_node(uint64_t nodes_count, uint64_t max_anon)
+{
+    // TODO: is it bad to seek to a pos that does not exist yet?
+    file.seekp(MAX_ANON_OFFSET);
+    write_uint64(max_anon);
+    file.seekp(NODES_COUNT_OFFSET);
+    write_uint64(nodes_count);
+}
+
+void QuadCatalog::process_import_node_labels(
+    uint64_t node_labels_count,
+    const boost::unordered_flat_map<uint64_t, uint64_t>& node_label2total_count
+)
+{
+    file.seekp(NODE_LABELS_COUNT_OFFSET);
+    write_uint64(node_labels_count);
+
+    file.seekp(0, file.end);
+    for (auto&& [internal_id, count] : node_label2total_count) {
+        write_uint8(uint8_t(CatalogInfo::node_label_stat));
+        write_uint64(internal_id);
+        write_uint64(count);
+    }
+}
+
+void QuadCatalog::process_import_node_keys(
+    uint64_t node_properties_count,
+    const boost::unordered_flat_map<uint64_t, uint64_t>& node_key2total_count
+) {
+    file.seekp(NODE_PROPERTIES_COUNT_OFFSET);
+    write_uint64(node_properties_count);
+
+    file.seekp(0, file.end);
+    for (auto&& [internal_id, count] : node_key2total_count) {
+        write_uint8(uint8_t(CatalogInfo::node_key_stat));
+        write_uint64(internal_id);
+        write_uint64(count);
+    }
+}
+
+void QuadCatalog::process_import_edge_keys(
+    uint64_t edge_properties_count,
+    const boost::unordered_flat_map<uint64_t, uint64_t>& edge_key2total_count
+)  {
+    file.seekp(EDGE_PROPERTIES_COUNT_OFFSET);
+    write_uint64(edge_properties_count);
+
+    file.seekp(0, file.end);
+    for (auto&& [internal_id, count] : edge_key2total_count) {
+        write_uint8(uint8_t(CatalogInfo::edge_key_stat));
+        write_uint64(internal_id);
+        write_uint64(count);
+    }
+}
+
+void QuadCatalog::process_import_edges(
+    uint64_t max_edge,
+    const boost::unordered_flat_map<uint64_t, uint64_t>& edge_label2total_count
+) {
+    file.seekp(MAX_EDGE_OFFSET);
+    write_uint64(max_edge);
+
+    file.seekp(0, file.end);
+    for (auto&& [internal_id, count] : edge_label2total_count) {
+        write_uint8(uint8_t(CatalogInfo::edge_label_stat));
+        write_uint64(internal_id);
+        write_uint64(count);
+    }
+}
+
+void QuadCatalog::process_import_equal_from_to(
+    uint64_t equal_from_to_count,
+    const boost::unordered_flat_map<uint64_t, uint64_t>& edge_label2equal_from_to_count
+)  {
+    file.seekp(EQUAL_FROM_TO_COUNT_OFFSET);
+    write_uint64(equal_from_to_count);
+
+    file.seekp(0, file.end);
+    for (auto&& [internal_id, count] : edge_label2equal_from_to_count) {
+        write_uint8(uint8_t(CatalogInfo::equal_from_to_stat));
+        write_uint64(internal_id);
+        write_uint64(count);
+    }
 }

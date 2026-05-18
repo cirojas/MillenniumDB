@@ -17,18 +17,13 @@ class OnDiskImport;
 }} // namespace Import::QuadModel
 
 class QuadCatalog : public Catalog {
-    friend class Import::QuadModel::OnDiskImport;
-    friend class Import::QuadModel::CSV::OnDiskImport;
+    // friend class Import::QuadModel::OnDiskImport;
+    // friend class Import::QuadModel::CSV::OnDiskImport;
 
     struct CountOffset {
         uint64_t count;
         uint64_t offset;
     };
-
-    // struct StringOffset {
-    //     std::string str;
-    //     uint64_t offset;
-    // };
 
 private:
     mutable std::shared_mutex mutex;
@@ -41,7 +36,6 @@ private:
     static constexpr size_t NODE_PROPERTIES_COUNT_OFFSET = NODE_LABELS_COUNT_OFFSET + sizeof(uint64_t);
     static constexpr size_t EDGE_PROPERTIES_COUNT_OFFSET = NODE_PROPERTIES_COUNT_OFFSET + sizeof(uint64_t);
     static constexpr size_t EQUAL_FROM_TO_COUNT_OFFSET = EDGE_PROPERTIES_COUNT_OFFSET + sizeof(uint64_t);
-
 
     // there may be gaps in anons, this number is the upper bound
     // meaning each anon is strictly less this this number
@@ -111,19 +105,16 @@ public:
 
     uint64_t get_distinct_keys_count() const
     {
-        // std::shared_lock lock(mutex);
         return keys_str.size();
     }
 
     uint64_t get_distinct_edge_labels() const
     {
-        // std::shared_lock lock(mutex);
         return edge_labels_str.size();
     }
 
     uint64_t get_distinct_node_labels() const
     {
-        // std::shared_lock lock(mutex);
         return node_labels_str.size();
     }
 
@@ -175,6 +166,33 @@ public:
     void update_nodes_properties_count(int diff);
     void update_edge_properties_count(int diff);
     void update_equal_from_to_count(int diff);
+
+    void process_import_keys_labels(
+        const boost::unordered_flat_map<std::string, uint64_t>& keys2id,
+        const boost::unordered_flat_map<std::string, uint64_t>& node_labels2id,
+        const boost::unordered_flat_map<std::string, uint64_t>& edge_labels2id
+    );
+    void process_import_node(uint64_t nodes_count, uint64_t max_anon);
+    void process_import_node_labels(
+        uint64_t node_labels_count,
+        const boost::unordered_flat_map<uint64_t, uint64_t>& node_label2total_count
+    );
+    void process_import_node_keys(
+        uint64_t node_properties_count,
+        const boost::unordered_flat_map<uint64_t, uint64_t>& node_key2total_count
+    );
+    void process_import_edge_keys(
+        uint64_t edge_properties_count,
+        const boost::unordered_flat_map<uint64_t, uint64_t>& edge_key2total_count
+    );
+    void process_import_edges(
+        uint64_t max_edge,
+        const boost::unordered_flat_map<uint64_t, uint64_t>& edge_label2total_count
+    );
+    void process_import_equal_from_to(
+        uint64_t equal_from_to_count,
+        const boost::unordered_flat_map<uint64_t, uint64_t>& edge_label2equal_from_to_count
+    );
 
     void flush_changes();
 

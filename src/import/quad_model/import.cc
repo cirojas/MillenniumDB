@@ -186,6 +186,11 @@ void OnDiskImport::start_import(MDBIstream& in)
     edges.finish_appends();
     equal_from_to.finish_appends();
 
+    // catalog.node_labels2id = std::move(node_labels2id);
+    // catalog.edge_labels2id = std::move(edge_labels2id);
+    // catalog.keys2id = std::move(keys2id);
+    catalog.process_import_keys_labels(keys2id, node_labels2id, edge_labels2id);
+
     { // Append undeclared nodes (being on an edge)
         boost::unordered_flat_set<uint64_t> nodes_set;
 
@@ -207,8 +212,9 @@ void OnDiskImport::start_import(MDBIstream& in)
         }
         // declared_nodes.finish_appends() its called twice, no problem with that
         nodes.finish_appends();
-        catalog.nodes_count = nodes_set.size();
-        catalog.max_anon = max_anon_seen;
+        // catalog.nodes_count = nodes_set.size();
+        // catalog.max_anon = max_anon_seen;
+        catalog.process_import_node(nodes_set.size(), max_anon_seen);
     }
     print_duration("Write table", start);
 
@@ -233,12 +239,12 @@ void OnDiskImport::start_import(MDBIstream& in)
         DictCountStat<2> label_stat;
 
         node_labels.create_bpt(db_folder + "/node_label", { C_NODE, C_LABEL }, no_stat);
-
         node_labels.create_bpt(db_folder + "/label_node", { C_LABEL, C_NODE }, label_stat);
-        catalog.node_labels_count = label_stat.all;
         label_stat.end();
 
+        // catalog.node_labels_count = label_stat.all;
         // catalog.node_label2total_count = std::move(label_stat.dict);
+        catalog.process_import_node_labels(label_stat.all, label_stat.dict);
     }
 
     { // Node Properties B+Tree
@@ -248,12 +254,12 @@ void OnDiskImport::start_import(MDBIstream& in)
         PropStat prop_stat;
 
         node_properties.create_bpt(db_folder + "/node_key_value", { C_NODE, C_KEY, C_VALUE }, no_stat);
-
         node_properties.create_bpt(db_folder + "/key_value_node", { C_KEY, C_VALUE, C_NODE }, prop_stat);
-        // catalog.node_properties_count = prop_stat.all;
         prop_stat.end();
 
+        // catalog.node_properties_count = prop_stat.all;
         // catalog.node_key2total_count = std::move(prop_stat.map_key_count);
+        catalog.process_import_node_keys(prop_stat.all, prop_stat.map_key_count);
     }
 
     { // Edge Properties B+Tree
@@ -263,12 +269,12 @@ void OnDiskImport::start_import(MDBIstream& in)
         PropStat prop_stat;
 
         node_properties.create_bpt(db_folder + "/edge_key_value", { C_EDGE, C_KEY, C_VALUE }, no_stat);
-
         node_properties.create_bpt(db_folder + "/key_value_edge", { C_KEY, C_VALUE, C_EDGE }, prop_stat);
-        // catalog.edge_properties_count = prop_stat.all;
         prop_stat.end();
 
+        // catalog.edge_properties_count = prop_stat.all;
         // catalog.edge_key2total_count = std::move(prop_stat.map_key_count);
+        catalog.process_import_edge_keys(prop_stat.all, prop_stat.map_key_count);
     }
 
     { // Quad B+Trees
@@ -279,32 +285,30 @@ void OnDiskImport::start_import(MDBIstream& in)
         DictCountStat<4> dict_count;
 
         edges.create_bpt(db_folder + "/from_to_label_edge", { C_FROM, C_TO, C_LABEL, C_EDGE }, all_stat);
-
         edges.create_bpt(db_folder + "/to_label_from_edge", { C_TO, C_LABEL, C_FROM, C_EDGE }, no_stat);
-
         edges.create_bpt(db_folder + "/label_from_to_edge", { C_LABEL, C_FROM, C_TO, C_EDGE }, dict_count);
-
         edges.create_bpt(db_folder + "/label_to_from_edge", { C_LABEL, C_TO, C_FROM, C_EDGE }, no_stat);
-
         edges.create_bpt(db_folder + "/edge_from_to_label", { C_EDGE, C_FROM, C_TO, C_LABEL }, no_stat);
+        dict_count.end();
 
         // catalog.max_edge = all_stat.all;
         // catalog.edge_label2total_count = std::move(dict_count.dict);
+        catalog.process_import_edges(all_stat.all, dict_count.dict);
     }
 
     { // FROM=TO LABEL EDGE
         size_t C_FROM_TO = 0, C_LABEL = 1, C_EDGE = 2;
 
         NoStat<3> no_stat;
-        equal_from_to.create_bpt(db_folder + "/equal_from_to", { C_FROM_TO, C_LABEL, C_EDGE }, no_stat);
-
         DictCountStat<3> stat;
+
+        equal_from_to.create_bpt(db_folder + "/equal_from_to", { C_FROM_TO, C_LABEL, C_EDGE }, no_stat);
         equal_from_to.create_bpt(db_folder + "/equal_from_to_inverted", { C_LABEL, C_FROM_TO, C_EDGE }, stat);
         stat.end();
 
         // catalog.equal_from_to_count = stat.all;
         // catalog.edge_label2equal_from_to_count = std::move(stat.dict);
-        // TODO:
+        catalog.process_import_equal_from_to(stat.all, stat.dict);
     }
 
     // calling finish_indexing() closes and removes the file.
@@ -316,13 +320,7 @@ void OnDiskImport::start_import(MDBIstream& in)
     equal_from_to.finish_indexing();
 
     print_duration("Write B+tree indexes", start);
-
-    catalog.node_labels2id = std::move(node_labels2id);
-    catalog.edge_labels2id = std::move(edge_labels2id);
-    catalog.keys2id = std::move(keys2id);
-
     catalog.print(std::cout);
-
     print_duration("Total Import", import_start);
 }
 
