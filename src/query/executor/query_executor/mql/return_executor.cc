@@ -190,8 +190,58 @@ void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, Obje
         dict->to_string(escaped_os);
         break;
     }
-    default:
-        throw std::logic_error("Unmanaged mask in ReturnExecutor print: " + to_string(type));
+    case ObjectType::NotFound: {
+        os << "_not_found_";
+        break;
+    }
+    case ObjectType::NodeLabel: {
+        os << "NodeLabel:" << Conversions::get_node_label(oid);
+        break;
+    }
+    case ObjectType::EdgeLabel: {
+        os << "EdgeLabel:" << Conversions::get_edge_label(oid);
+        break;
+    }
+    case ObjectType::PropertyKey: {
+        os << "Key:"  << Conversions::get_key(oid);
+        break;
+    }
+    // TODO:
+    // default:
+    //     throw std::logic_error("Unmanaged mask in ReturnExecutor print: " + to_string(type));
+    case ObjectType::NamedNodeHexInl:
+    case ObjectType::NamedNodeHexExt:
+    case ObjectType::NamedNodeHexTmp:
+    case ObjectType::NamedNodeUuidExt:
+    case ObjectType::NamedNodeUuidTmp:
+    case ObjectType::IriInl:
+    case ObjectType::IriExt:
+    case ObjectType::IriTmp:
+    case ObjectType::StringXsdInl:
+    case ObjectType::StringXsdExt:
+    case ObjectType::StringXsdTmp:
+    case ObjectType::StringLangInl:
+    case ObjectType::StringLangExt:
+    case ObjectType::StringLangTmp:
+    case ObjectType::StringDatatypeInl:
+    case ObjectType::StringDatatypeExt:
+    case ObjectType::StringDatatypeTmp:
+    case ObjectType::DecimalInl:
+    case ObjectType::DecimalExt:
+    case ObjectType::DecimalTmp:
+    case ObjectType::DoubleExt:
+    case ObjectType::DoubleTmp:
+    case ObjectType::UndirectedEdge:
+    case ObjectType::Direction:
+    case ObjectType::IriUuidLowerExt:
+    case ObjectType::IriUuidLowerTmp:
+    case ObjectType::IriUuidUpperExt:
+    case ObjectType::IriUuidUpperTmp:
+    case ObjectType::IriHexLowerExt:
+    case ObjectType::IriHexLowerTmp:
+    case ObjectType::IriHexUpperExt:
+    case ObjectType::IriHexUpperTmp:
+        break;
     }
 }
 

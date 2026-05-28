@@ -1043,15 +1043,15 @@ Any QueryVisitor::visitEdge(MQL_Parser::EdgeContext* ctx)
 {
     if (ctx->edgeInside() == nullptr) {
         saved_edge = get_query_ctx().get_internal_var();
-        saved_type = get_query_ctx().get_internal_var();
+        saved_edge_label = get_query_ctx().get_internal_var();
     }
     visitChildren(ctx);
     if (ctx->GT() != nullptr) {
         // right direction
-        current_bgp->add_edge(saved_node, last_object, saved_type, saved_edge);
+        current_bgp->add_edge(saved_node, last_object, saved_edge_label, saved_edge);
     } else {
         // left direction
-        current_bgp->add_edge(last_object, saved_node, saved_type, saved_edge);
+        current_bgp->add_edge(last_object, saved_node, saved_edge_label, saved_edge);
     }
     return 0;
 }
@@ -1074,13 +1074,13 @@ Any QueryVisitor::visitEdgeInside(MQL_Parser::EdgeInsideContext* ctx)
     if (auto type_var = ctx->LABEL_VAR()) {
         auto type_var_name = type_var->getText();
         type_var_name.erase(0, 2); // remove leading ':?'
-        saved_type = get_query_ctx().get_or_create_var(type_var_name);
+        saved_edge_label = get_query_ctx().get_or_create_var(type_var_name);
     } else if (auto type = ctx->LABEL()) {
         auto type_str = type->getText();
         type_str.erase(0, 1); // remove leading ':'
-        saved_type = MQL::Conversions::pack_named_node(type_str);
+        saved_edge_label = MQL::Conversions::get_edge_label_id(type_str);
     } else {
-        saved_type = get_query_ctx().get_internal_var();
+        saved_edge_label = get_query_ctx().get_internal_var();
     }
 
     auto properties = ctx->properties();

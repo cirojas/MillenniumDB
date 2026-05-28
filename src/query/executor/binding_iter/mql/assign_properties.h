@@ -23,8 +23,6 @@ public:
     std::unique_ptr<BindingIter> child_iter;
 
 private:
-    std::vector<VarId> property_vars;
-
     std::vector<ExprVarProperty> var_properties;
 
     Binding* parent_binding;

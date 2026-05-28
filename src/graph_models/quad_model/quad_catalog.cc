@@ -39,6 +39,16 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
         node_properties_count = 0;
         edge_properties_count = 0;
         equal_from_to_count = 0;
+        start_write(MODEL_ID, MAJOR_VERSION, MINOR_VERSION);
+        // TODO:
+        write_uint64(0);
+        write_uint64(0);
+        write_uint64(0);
+        write_uint64(0);
+        write_uint64(0);
+        write_uint64(0);
+        write_uint64(0);
+        write_uint64(0);
         return;
     }
     // not empty
@@ -67,6 +77,7 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
             if (label_id >= node_labels_str.size()) {
                 node_labels_str.resize(label_id + 1);
             }
+            std::cout << "node_label: " << label_str << ":" << label_id << "\n";
             node_labels_str[label_id] = label_str;
             node_labels2id.insert({ label_str, label_id });
             break;
@@ -77,6 +88,7 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
             if (label_id >= edge_labels_str.size()) {
                 edge_labels_str.resize(label_id + 1);
             }
+            std::cout << "edge_label: " << label_str << ":" << label_id << "\n";
             edge_labels_str[label_id] = label_str;
             edge_labels2id.insert({ label_str, label_id });
             break;
@@ -87,6 +99,7 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
             if (key_id >= keys_str.size()) {
                 keys_str.resize(key_id + 1);
             }
+            std::cout << "key: " << key_id << ":" << key_str << "\n";
             keys_str[key_id] = key_str;
             keys2id.insert({ key_str, key_id });
             break;
@@ -784,17 +797,24 @@ void QuadCatalog::process_import_keys_labels(
 {
     file.seekp(0, file.end);
 
+    // TODO: delete debug prints
+    std::cout << "_keys2id:\n";
     for (auto&& [str, internal_id] : _keys2id) {
+        std::cout << str << ":" << internal_id << "\n";
         write_uint8(uint8_t(CatalogInfo::key));
         write_uint64(internal_id);
         write_string(str);
     }
+    std::cout << "_node_labels2id:\n";
     for (auto&& [str, internal_id] : _node_labels2id) {
+        std::cout << str << ":" << internal_id << "\n";
         write_uint8(uint8_t(CatalogInfo::node_label));
         write_uint64(internal_id);
         write_string(str);
     }
+    std::cout << "_edge_labels2id:\n";
     for (auto&& [str, internal_id] : _edge_labels2id) {
+        std::cout << str << ":" << internal_id << "\n";
         write_uint8(uint8_t(CatalogInfo::edge_label));
         write_uint64(internal_id);
         write_string(str);

@@ -1,21 +1,19 @@
 #pragma once
 
+#include "query/executor/binding_iter.h"
+#include "query/executor/binding_iter/scan_ranges/scan_range.h"
+#include "storage/index/bplus_tree/bplus_tree.h"
+
 #include <array>
 #include <memory>
 
-#include "query/executor/binding_iter.h"
-#include "storage/index/bplus_tree/bplus_tree.h"
-#include "query/executor/binding_iter/scan_ranges/scan_range.h"
-
-template <std::size_t N>
+template<std::size_t N>
 class IndexScan : public BindingIter {
 public:
-    IndexScan(
-        BPlusTree<N>&                               bpt,
-        std::array<std::unique_ptr<ScanRange>, N>&& ranges
-    ) :
-        ranges (std::move(ranges)),
-        bpt    (bpt) { }
+    IndexScan(BPlusTree<N>& bpt, std::array<std::unique_ptr<ScanRange>, N>&& ranges) :
+        ranges(std::move(ranges)),
+        bpt(bpt)
+    { }
 
     void print(std::ostream& os, int indent, bool stats) const override;
 

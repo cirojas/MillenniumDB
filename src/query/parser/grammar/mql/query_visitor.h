@@ -71,7 +71,7 @@ private:
 
     Id saved_edge = ObjectId::get_null();
 
-    Id saved_type = ObjectId::get_null();
+    Id saved_edge_label = ObjectId::get_null();
 
     Id saved_property_obj = ObjectId::get_null();
 

@@ -268,8 +268,8 @@ void OnDiskImport::start_import(MDBIstream& in)
         NoStat<3> no_stat;
         PropStat prop_stat;
 
-        node_properties.create_bpt(db_folder + "/edge_key_value", { C_EDGE, C_KEY, C_VALUE }, no_stat);
-        node_properties.create_bpt(db_folder + "/key_value_edge", { C_KEY, C_VALUE, C_EDGE }, prop_stat);
+        edge_properties.create_bpt(db_folder + "/edge_key_value", { C_EDGE, C_KEY, C_VALUE }, no_stat);
+        edge_properties.create_bpt(db_folder + "/key_value_edge", { C_KEY, C_VALUE, C_EDGE }, prop_stat);
         prop_stat.end();
 
         // catalog.edge_properties_count = prop_stat.all;

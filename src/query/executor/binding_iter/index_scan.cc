@@ -22,11 +22,7 @@ void IndexScan<N>::_reset()
         max_ids[i] = ranges[i]->get_max(*parent_binding);
     }
 
-    it = bpt.get_range(
-        &get_query_ctx().thread_info.interruption_requested,
-        min_ids,
-        max_ids
-    );
+    it = bpt.get_range(&get_query_ctx().thread_info.interruption_requested, min_ids, max_ids);
     ++bpt_searches;
 }
 
@@ -56,7 +52,8 @@ void IndexScan<N>::print(std::ostream& os, int indent, bool stats) const
 {
     if (stats) {
         os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
-           << " reset: " << stat_reset << " results: " << results << " bpt_searches: " << bpt_searches << "]\n";
+           << " reset: " << stat_reset << " results: " << results << " bpt_searches: " << bpt_searches
+           << "]\n";
     }
     os << std::string(indent, ' ') << "IndexScan(ranges:";
     for (auto& range : ranges) {

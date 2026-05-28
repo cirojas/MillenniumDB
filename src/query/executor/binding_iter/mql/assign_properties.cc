@@ -69,9 +69,9 @@ void AssignProperties::print(std::ostream& os, int indent, bool stats) const
     }
 
     os << std::string(indent, ' ') << "AssignProperties(";
-    os << property_vars[0];
-    for (std::size_t i = 1; i < property_vars.size(); ++i) {
-        os << ", " << property_vars[i];
+    os << var_properties[0];
+    for (std::size_t i = 1; i < var_properties.size(); ++i) {
+        os << ", " << var_properties[i];
     }
     os << ")\n";
 
