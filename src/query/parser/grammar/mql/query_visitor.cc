@@ -130,7 +130,14 @@ Any QueryVisitor::visitSimpleQuery(MQL_Parser::SimpleQueryContext* ctx)
             if (sequence.empty()) {
                 throw QueryException("Invalid WHERE placement");
             }
-            sequence.back() = std::make_unique<OpWhere>(std::move(sequence.back()), std::move(current_expr));
+            if (sequence.size() > 1) {
+                current_op = std::make_unique<OpSequence>(std::move(sequence));
+            } else {
+                assert(sequence.size() > 0);
+                current_op = std::move(sequence[0]);
+            }
+            sequence.clear();
+            sequence.emplace_back(std::make_unique<OpWhere>(std::move(current_op), std::move(current_expr)));
         } else {
             assert(current_op != nullptr);
             if (current_expr) {
